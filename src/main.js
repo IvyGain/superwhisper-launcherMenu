@@ -24,19 +24,22 @@ app.whenReady().then(() => {
 // メインウィンドウの作成
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1000,
+    height: 700,
+    minWidth: 600,
+    minHeight: 400,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
     },
     show: false, // 初期状態では非表示
     skipTaskbar: true,
-    resizable: false,
+    resizable: true, // リサイズ可能に
     frame: false,
     alwaysOnTop: true,
     transparent: true,
-    backgroundColor: '#00000000'
+    backgroundColor: '#00000000',
+    titleBarStyle: 'hidden'
   });
 
   mainWindow.loadFile('src/index.html');
@@ -233,8 +236,8 @@ function loadModes() {
           const mode = JSON.parse(content);
           
           if (mode.key && mode.name) {
-            // カスタムアイコンの取得
-            const customIcon = store.get(`icons.${mode.key}`, getDefaultIcon(mode.type));
+            // カスタムアイコンの取得（モード名とプロンプトを考慮）
+            const customIcon = store.get(`icons.${mode.key}`, getDefaultIcon(mode.type, mode.name, mode.prompt));
             
             modesData.push({
               ...mode,
@@ -260,10 +263,11 @@ function loadModes() {
 }
 
 // モードタイプに基づくデフォルトアイコン
-function getDefaultIcon(type) {
+function getDefaultIcon(type, modeName = '', prompt = '') {
+  // より詳細な絵文字マッピング
   const iconMap = {
     'message': '💬',
-    'email': '📧',
+    'email': '📧', 
     'note': '📝',
     'voice': '🎤',
     'custom': '⚙️',
@@ -271,8 +275,39 @@ function getDefaultIcon(type) {
     'translation': '🌐',
     'summary': '📋',
     'code': '💻',
-    'creative': '🎨'
+    'creative': '🎨',
+    'writing': '✍️',
+    'business': '💼',
+    'social': '🤝',
+    'learning': '📚',
+    'music': '🎵',
+    'design': '🎨',
+    'presentation': '📊',
+    'meeting': '👥',
+    'planning': '📅',
+    'research': '🔍'
   };
+  
+  // モード名やプロンプトから推測
+  if (modeName || prompt) {
+    const text = (modeName + ' ' + prompt).toLowerCase();
+    
+    if (text.includes('自己紹介') || text.includes('プロフィール')) return '👋';
+    if (text.includes('メール') || text.includes('mail')) return '📧';
+    if (text.includes('ブログ') || text.includes('記事')) return '📝';
+    if (text.includes('会議') || text.includes('ミーティング')) return '👥';
+    if (text.includes('プレゼン') || text.includes('発表')) return '📊';
+    if (text.includes('翻訳') || text.includes('translate')) return '🌐';
+    if (text.includes('要約') || text.includes('まとめ')) return '📋';
+    if (text.includes('コード') || text.includes('プログラム')) return '💻';
+    if (text.includes('デザイン') || text.includes('design')) return '🎨';
+    if (text.includes('音楽') || text.includes('music')) return '🎵';
+    if (text.includes('学習') || text.includes('勉強')) return '📚';
+    if (text.includes('計画') || text.includes('予定')) return '📅';
+    if (text.includes('検索') || text.includes('調査')) return '🔍';
+    if (text.includes('ビジネス') || text.includes('商談')) return '💼';
+    if (text.includes('クリエイティブ') || text.includes('創作')) return '✨';
+  }
   
   return iconMap[type] || '🎯';
 }

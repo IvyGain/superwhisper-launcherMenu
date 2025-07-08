@@ -8,13 +8,51 @@ const iconSettings = document.getElementById('iconSettings');
 // モードデータ
 let currentModes = [];
 
-// 絵文字リスト
-const emojiList = [
-    '💬', '📧', '📝', '🎤', '⚙️', '💭', '🌐', '📋', '💻', '🎨',
-    '🔥', '⭐', '💡', '🎯', '🚀', '💎', '🏆', '🎪', '🎭', '🎵',
-    '📊', '📈', '📉', '🔍', '💰', '🏠', '🏢', '🌟', '✨', '💫',
-    '🌙', '☀️', '🌈', '🎶', '🎼', '🎹', '📱', '💻', '⌨️', '🖥️'
-];
+// Mac絵文字リスト（カテゴリ別）
+const emojiCategories = {
+    '顔と感情': [
+        '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃',
+        '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '☺️', '😚',
+        '😙', '🥲', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭',
+        '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄',
+        '😬', '🤥', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢'
+    ],
+    '人物': [
+        '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤏', '✌️', '🤞', '🤟',
+        '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎',
+        '👊', '✊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏',
+        '👶', '🧒', '👦', '👧', '🧑', '👱', '👨', '🧔', '👩', '🧓'
+    ],
+    '物体': [
+        '💻', '⌨️', '🖥️', '🖨️', '🖱️', '🖲️', '💽', '💾', '💿', '📀',
+        '📱', '📞', '☎️', '📟', '📠', '📺', '📻', '🎙️', '🎚️', '🎛️',
+        '⏰', '⏲️', '⏱️', '⏳', '⌛', '📡', '🔋', '🔌', '💡', '🔦',
+        '📧', '📨', '📩', '📤', '📥', '📦', '📫', '📪', '📬', '📭'
+    ],
+    '活動': [
+        '🎯', '🎪', '🎨', '🎭', '🎵', '🎶', '🎼', '🎹', '🥁', '🎷',
+        '🎺', '🎸', '🪕', '🎻', '🎤', '🎧', '📻', '🎬', '🎮', '🕹️',
+        '🎲', '♠️', '♥️', '♦️', '♣️', '🃏', '🀄', '🎴', '🎊', '🎉'
+    ],
+    'ビジネス': [
+        '💼', '📊', '📈', '📉', '📋', '📌', '📍', '📎', '🖇️', '📏',
+        '📐', '✂️', '🗃️', '🗄️', '🗑️', '🔒', '🔓', '🔏', '🔐', '🔑',
+        '🗝️', '🔨', '🪓', '⛏️', '⚒️', '🛠️', '🗡️', '⚔️', '🔫', '🪃'
+    ],
+    '自然': [
+        '🌱', '🌿', '☘️', '🍀', '🎋', '🍃', '🍂', '🍁', '🌾', '🌺',
+        '🌻', '🌹', '🥀', '🌷', '🌼', '🌸', '💐', '🍄', '🌰', '🎃',
+        '🌍', '🌎', '🌏', '🌕', '🌖', '🌗', '🌘', '🌑', '🌒', '🌓'
+    ],
+    '食べ物': [
+        '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🫐', '🍈',
+        '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆', '🥑', '🥦',
+        '☕', '🫖', '🍵', '🧃', '🥤', '🧋', '🍶', '🍾', '🍷', '🍸'
+    ]
+};
+
+// 全絵文字をフラット化
+const emojiList = Object.values(emojiCategories).flat();
 
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
@@ -169,48 +207,97 @@ function showEmojiPicker(modeKey, button) {
         position: fixed;
         background: white;
         border: 1px solid #ddd;
-        border-radius: 10px;
-        padding: 10px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        border-radius: 15px;
+        padding: 0;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
         z-index: 2000;
-        display: grid;
-        grid-template-columns: repeat(8, 1fr);
-        gap: 5px;
-        max-width: 300px;
+        max-width: 400px;
+        max-height: 500px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
     `;
     
     // ボタンの位置を取得
     const rect = button.getBoundingClientRect();
-    picker.style.left = Math.max(10, rect.left - 150) + 'px';
-    picker.style.top = (rect.bottom + 10) + 'px';
+    picker.style.left = Math.max(10, rect.left - 200) + 'px';
+    picker.style.top = Math.max(10, rect.bottom + 10) + 'px';
     
-    // 絵文字ボタンを追加
-    emojiList.forEach(emoji => {
-        const emojiBtn = document.createElement('button');
-        emojiBtn.textContent = emoji;
-        emojiBtn.style.cssText = `
-            font-size: 1.5em;
-            border: none;
-            background: none;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 5px;
-            transition: background 0.2s;
+    // ヘッダー
+    const header = document.createElement('div');
+    header.style.cssText = `
+        padding: 15px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #eee;
+        font-weight: 600;
+        color: #333;
+    `;
+    header.textContent = '絵文字を選択';
+    picker.appendChild(header);
+    
+    // スクロール可能なコンテンツエリア
+    const content = document.createElement('div');
+    content.style.cssText = `
+        overflow-y: auto;
+        max-height: 400px;
+        padding: 15px;
+    `;
+    
+    // カテゴリ別に絵文字を表示
+    Object.entries(emojiCategories).forEach(([category, emojis]) => {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.style.marginBottom = '20px';
+        
+        const categoryTitle = document.createElement('div');
+        categoryTitle.textContent = category;
+        categoryTitle.style.cssText = `
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
         `;
-        emojiBtn.addEventListener('mouseenter', () => {
-            emojiBtn.style.background = '#f0f0f0';
+        categoryDiv.appendChild(categoryTitle);
+        
+        const emojiGrid = document.createElement('div');
+        emojiGrid.style.cssText = `
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 5px;
+        `;
+        
+        emojis.forEach(emoji => {
+            const emojiBtn = document.createElement('button');
+            emojiBtn.textContent = emoji;
+            emojiBtn.style.cssText = `
+                font-size: 1.5em;
+                border: none;
+                background: none;
+                cursor: pointer;
+                padding: 8px;
+                border-radius: 6px;
+                transition: background 0.2s;
+            `;
+            emojiBtn.addEventListener('mouseenter', () => {
+                emojiBtn.style.background = '#f0f0f0';
+            });
+            emojiBtn.addEventListener('mouseleave', () => {
+                emojiBtn.style.background = 'none';
+            });
+            emojiBtn.addEventListener('click', () => {
+                updateIcon(modeKey, emoji);
+                button.textContent = emoji;
+                picker.remove();
+            });
+            emojiGrid.appendChild(emojiBtn);
         });
-        emojiBtn.addEventListener('mouseleave', () => {
-            emojiBtn.style.background = 'none';
-        });
-        emojiBtn.addEventListener('click', () => {
-            updateIcon(modeKey, emoji);
-            button.textContent = emoji;
-            picker.remove();
-        });
-        picker.appendChild(emojiBtn);
+        
+        categoryDiv.appendChild(emojiGrid);
+        content.appendChild(categoryDiv);
     });
     
+    picker.appendChild(content);
     document.body.appendChild(picker);
     
     // 外側をクリックで閉じる
