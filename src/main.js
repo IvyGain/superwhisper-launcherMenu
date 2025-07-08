@@ -161,26 +161,51 @@ function watchModesFolder() {
     try {
       const watcher = chokidar.watch(modesPath, {
         persistent: true,
-        ignoreInitial: false
+        ignoreInitial: true, // 初期スキャンを無視
+        depth: 0, // サブディレクトリを監視しない
+        awaitWriteFinish: {
+          stabilityThreshold: 1000,
+          pollInterval: 100
+        }
       });
 
-      watcher.on('change', () => {
-        loadModes();
+      watcher.on('change', (path) => {
+        if (path.endsWith('.json')) {
+          console.log('モードファイル変更:', path);
+          debounceLoadModes();
+        }
       });
 
-      watcher.on('add', () => {
-        loadModes();
+      watcher.on('add', (path) => {
+        if (path.endsWith('.json')) {
+          console.log('モードファイル追加:', path);
+          debounceLoadModes();
+        }
       });
 
-      watcher.on('unlink', () => {
-        loadModes();
+      watcher.on('unlink', (path) => {
+        if (path.endsWith('.json')) {
+          console.log('モードファイル削除:', path);
+          debounceLoadModes();
+        }
       });
+      
+      console.log('ファイル監視開始:', modesPath);
     } catch (error) {
       console.log('ファイル監視エラー:', error);
     }
   } else {
     console.log('Modesフォルダが見つかりません:', modesPath);
   }
+}
+
+// デバウンス機能付きモード読み込み
+let loadModesTimeout;
+function debounceLoadModes() {
+  clearTimeout(loadModesTimeout);
+  loadModesTimeout = setTimeout(() => {
+    loadModes();
+  }, 500);
 }
 
 // モードファイルの読み込み
