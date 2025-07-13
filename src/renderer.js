@@ -58,6 +58,7 @@ const emojiList = Object.values(emojiCategories).flat();
 document.addEventListener('DOMContentLoaded', () => {
     requestModes();
     setupEventListeners();
+    loadShortcutSettings();
 });
 
 // イベントリスナーの設定
@@ -370,3 +371,152 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// ショートカット設定の読み込み
+function loadShortcutSettings() {
+    ipcRenderer.send('get-shortcut-settings');
+}
+
+// ショートカット設定の受信
+ipcRenderer.on('shortcut-settings-updated', (event, settings) => {
+    const launcherInput = document.getElementById('launcherShortcut');
+    if (launcherInput) {
+        launcherInput.value = settings.launcher || 'Cmd+Shift+W';
+    }
+});
+
+// ショートカット記録の状態管理
+let recordingShortcut = null;
+let recordingKeys = [];
+
+// ショートカットの記録
+function recordShortcut(type) {
+    const button = document.querySelector(`button[onclick="recordShortcut('${type}')"]`);
+    const input = document.getElementById(`${type}Shortcut`);
+    
+    if (recordingShortcut) {
+        // 既に記録中の場合はキャンセル
+        stopRecording();
+        return;
+    }
+    
+    recordingShortcut = type;
+    recordingKeys = [];
+    
+    button.textContent = '記録中...';
+    button.disabled = true;
+    input.style.borderColor = '#ff4757';
+    input.value = 'キーを押してください';
+    
+    // キーボードイベントリスナー
+    document.addEventListener('keydown', handleShortcutKeydown);
+    document.addEventListener('keyup', handleShortcutKeyup);
+    
+    // 10秒後にタイムアウト
+    setTimeout(() => {
+        if (recordingShortcut) {
+            showNotification('ショートカット記録がタイムアウトしました', 'error');
+            stopRecording();
+        }
+    }, 10000);
+}
+
+function handleShortcutKeydown(e) {
+    if (!recordingShortcut) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const key = e.key;
+    
+    // 修飾キーの処理
+    if (key === 'Control' || key === 'Meta' || key === 'Alt' || key === 'Shift') {
+        if (!recordingKeys.includes(key)) {
+            recordingKeys.push(key);
+        }
+        updateShortcutDisplay();
+        return;
+    }
+    
+    // 通常キーの処理
+    if (!recordingKeys.includes(key)) {
+        recordingKeys.push(key);
+    }
+    
+    updateShortcutDisplay();
+    
+    // 修飾キー + 通常キーの組み合わせができた場合、記録終了
+    const hasModifier = recordingKeys.some(k => ['Control', 'Meta', 'Alt', 'Shift'].includes(k));
+    const hasNormalKey = recordingKeys.some(k => !['Control', 'Meta', 'Alt', 'Shift'].includes(k));
+    
+    if (hasModifier && hasNormalKey) {
+        setTimeout(() => {
+            finishRecording();
+        }, 100);
+    }
+}
+
+function handleShortcutKeyup(e) {
+    if (!recordingShortcut) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function updateShortcutDisplay() {
+    const input = document.getElementById(`${recordingShortcut}Shortcut`);
+    const displayKeys = recordingKeys.map(key => {
+        switch (key) {
+            case 'Meta': return 'Cmd';
+            case 'Control': return 'Ctrl';
+            case 'Alt': return 'Alt';
+            case 'Shift': return 'Shift';
+            default: return key.toUpperCase();
+        }
+    });
+    
+    input.value = displayKeys.join('+');
+}
+
+function finishRecording() {
+    if (!recordingShortcut || recordingKeys.length === 0) {
+        stopRecording();
+        return;
+    }
+    
+    const shortcutString = recordingKeys.map(key => {
+        switch (key) {
+            case 'Meta': return 'CommandOrControl';
+            case 'Control': return 'CommandOrControl';
+            case 'Alt': return 'Alt';
+            case 'Shift': return 'Shift';
+            default: return key.toUpperCase();
+        }
+    }).join('+');
+    
+    // メインプロセスに送信
+    ipcRenderer.send('update-shortcut', recordingShortcut, shortcutString);
+    
+    showNotification('ショートカットを更新しました', 'success');
+    stopRecording();
+}
+
+function stopRecording() {
+    if (!recordingShortcut) return;
+    
+    document.removeEventListener('keydown', handleShortcutKeydown);
+    document.removeEventListener('keyup', handleShortcutKeyup);
+    
+    const button = document.querySelector(`button[onclick="recordShortcut('${recordingShortcut}')"]`);
+    const input = document.getElementById(`${recordingShortcut}Shortcut`);
+    
+    button.textContent = '変更';
+    button.disabled = false;
+    input.style.borderColor = '#ddd';
+    
+    // 現在の設定を再表示
+    loadShortcutSettings();
+    
+    recordingShortcut = null;
+    recordingKeys = [];
+}

@@ -37,8 +37,8 @@ function createWindow() {
     resizable: true, // リサイズ可能に
     frame: false,
     alwaysOnTop: true,
-    transparent: true,
-    backgroundColor: '#00000000',
+    transparent: false,
+    backgroundColor: '#ffffff',
     titleBarStyle: 'hidden'
   });
 
@@ -137,8 +137,16 @@ function showWindow() {
 // グローバルショートカットの設定
 function setupGlobalShortcuts() {
   try {
+    // 既存のショートカットを削除
+    globalShortcut.unregisterAll();
+    
+    // 設定から現在のショートカットを取得
+    const shortcuts = store.get('shortcuts', {
+      launcher: 'CommandOrControl+Shift+W'
+    });
+    
     // メインランチャーのショートカット
-    globalShortcut.register('CommandOrControl+Shift+W', () => {
+    globalShortcut.register(shortcuts.launcher, () => {
       showWindow();
     });
 
@@ -377,4 +385,60 @@ app.on('activate', () => {
 app.on('will-quit', () => {
   // グローバルショートカットの解除
   globalShortcut.unregisterAll();
+});
+
+// ショートカット設定の取得
+ipcMain.handle('get-shortcut-settings', () => {
+  return store.get('shortcuts', {
+    launcher: 'CommandOrControl+Shift+W'
+  });
+});
+
+// ショートカット設定の更新
+ipcMain.handle('update-shortcut', (event, type, shortcut) => {
+  const shortcuts = store.get('shortcuts', {
+    launcher: 'CommandOrControl+Shift+W'
+  });
+  
+  shortcuts[type] = shortcut;
+  store.set('shortcuts', shortcuts);
+  
+  // グローバルショートカットを再設定
+  setupGlobalShortcuts();
+  
+  return shortcuts;
+});
+
+// ショートカット設定の送信
+ipcMain.on('get-shortcut-settings', (event) => {
+  const shortcuts = store.get('shortcuts', {
+    launcher: 'CommandOrControl+Shift+W'
+  });
+  
+  // 表示用に変換
+  const displayShortcuts = {
+    launcher: shortcuts.launcher.replace('CommandOrControl', 'Cmd').replace('+', '+')
+  };
+  
+  event.reply('shortcut-settings-updated', displayShortcuts);
+});
+
+// ショートカット更新
+ipcMain.on('update-shortcut', (event, type, shortcut) => {
+  const shortcuts = store.get('shortcuts', {
+    launcher: 'CommandOrControl+Shift+W'
+  });
+  
+  shortcuts[type] = shortcut;
+  store.set('shortcuts', shortcuts);
+  
+  // グローバルショートカットを再設定
+  setupGlobalShortcuts();
+  
+  // 表示用に変換
+  const displayShortcuts = {
+    launcher: shortcuts.launcher.replace('CommandOrControl', 'Cmd').replace('+', '+')
+  };
+  
+  event.reply('shortcut-settings-updated', displayShortcuts);
 });

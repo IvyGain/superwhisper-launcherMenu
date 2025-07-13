@@ -47,10 +47,18 @@
                 </div>
                 <div class="settings-section">
                     <h3>ショートカット</h3>
-                    <div class="shortcut-info">
-                        <p><strong>Cmd+Shift+W</strong> - ランチャーを開く</p>
-                        <p><strong>Cmd+1-9/0</strong> - モード直接起動</p>
-                        <p><strong>ESC</strong> - ランチャーを閉じる</p>
+                    <div class="shortcut-settings">
+                        <div class="shortcut-item">
+                            <label>ランチャーを開く:</label>
+                            <div class="shortcut-input-wrapper">
+                                <input type="text" id="launcherShortcut" class="shortcut-input" readonly>
+                                <button class="shortcut-btn" onclick="recordShortcut('launcher')">変更</button>
+                            </div>
+                        </div>
+                        <div class="shortcut-info">
+                            <p><strong>Cmd+1-9/0</strong> - モード直接起動</p>
+                            <p><strong>ESC</strong> - ランチャーを閉じる</p>
+                        </div>
                     </div>
                 </div>
             </div>
