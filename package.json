@@ -48,16 +48,13 @@
         "target": "dmg",
         "arch": ["x64", "arm64"]
       },
-      "icon": "assets/icon.icns",
       "darkModeSupport": true
     },
     "win": {
-      "target": "nsis",
-      "icon": "assets/icon.ico"
+      "target": "nsis"
     },
     "linux": {
-      "target": "AppImage",
-      "icon": "assets/icon.png"
+      "target": "AppImage"
     }
   }
 }

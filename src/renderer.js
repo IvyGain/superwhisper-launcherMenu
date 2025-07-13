@@ -276,8 +276,8 @@ const emojiCategories = {
   ],
 };
 
-// 全絵文字をフラット化
-const emojiList = Object.values(emojiCategories).flat();
+// 全絵文字をフラット化（将来の拡張用）
+// const emojiList = Object.values(emojiCategories).flat();
 
 // 初期化
 document.addEventListener('DOMContentLoaded', async () => {
@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   modesGrid = document.getElementById('modesGrid');
   settingsModal = document.getElementById('settingsModal');
   iconSettings = document.getElementById('iconSettings');
-  
+
   // 検索とフィルター機能の初期化
   initializeSearchAndFilter();
   // テーマの初期化
@@ -551,7 +551,7 @@ function handleDragEnter(e) {
   }
 }
 
-function handleDragLeave(e) {
+function handleDragLeave() {
   if (this !== draggedElement) {
     this.classList.remove('drop-zone');
   }
@@ -575,7 +575,7 @@ function handleDrop(e) {
   return false;
 }
 
-function handleDragEnd(e) {
+function handleDragEnd() {
   this.classList.remove('dragging');
   modesGrid.classList.remove('dragging');
 
@@ -985,16 +985,16 @@ function updateShortcutDisplay() {
 
   const displayKeys = recordingKeys.map((key) => {
     switch (key) {
-      case 'Meta':
-        return 'Cmd';
-      case 'Control':
-        return 'Ctrl';
-      case 'Alt':
-        return 'Alt';
-      case 'Shift':
-        return 'Shift';
-      default:
-        return key.toUpperCase();
+    case 'Meta':
+      return 'Cmd';
+    case 'Control':
+      return 'Ctrl';
+    case 'Alt':
+      return 'Alt';
+    case 'Shift':
+      return 'Shift';
+    default:
+      return key.toUpperCase();
     }
   });
 
@@ -1010,16 +1010,16 @@ async function finishRecording() {
   const shortcutString = recordingKeys
     .map((key) => {
       switch (key) {
-        case 'Meta':
-          return 'CommandOrControl';
-        case 'Control':
-          return 'CommandOrControl';
-        case 'Alt':
-          return 'Alt';
-        case 'Shift':
-          return 'Shift';
-        default:
-          return key.toUpperCase();
+      case 'Meta':
+        return 'CommandOrControl';
+      case 'Control':
+        return 'CommandOrControl';
+      case 'Alt':
+        return 'Alt';
+      case 'Shift':
+        return 'Shift';
+      default:
+        return key.toUpperCase();
       }
     })
     .join('+');
