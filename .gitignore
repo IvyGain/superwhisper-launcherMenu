@@ -8,6 +8,15 @@ yarn-error.log*
 dist/
 build/
 *.tgz
+*.dmg
+*.app
+
+# TypeScript
+*.tsbuildinfo
+
+# Cache
+.cache/
+.npm/
 
 # OS generated files
 .DS_Store
