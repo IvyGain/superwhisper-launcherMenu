@@ -63,4 +63,42 @@ SuperwhisperLauncher-Clean/
 
 ---
 
+## 📝 インストール・起動方法（日本語ガイド）
+
+### 1. 必要な環境
+- **Node.js**（推奨バージョン: 18以上）
+- **npm**（Node.jsに同梱）
+- **Git**（GitHubからクローンする場合）
+
+### 2. インストール手順
+1. このリポジトリをダウンロードまたはクローンします。
+   - ダウンロード: [Code] → [Download ZIP] で取得し、解凍してください。
+   - または、ターミナルで以下を実行：
+     ```bash
+     git clone https://github.com/IvyGain/superwhisper-launcherMenu.git
+     cd superwhisper-launcherMenu
+     ```
+2. 依存パッケージをインストールします：
+   ```bash
+   npm install
+   ```
+
+### 3. アプリの起動
+```bash
+npm start
+```
+- 初回起動時、必要なモードファイルが `~/Documents/superwhisper/modes` に存在することを確認してください。
+- アプリが起動し、システムトレイに常駐します。
+
+### 4. よくある質問
+- **インストーラーはありますか？**
+  - 現時点ではインストーラー（.dmg等）はありません。上記手順でソースから起動してください。
+  - 将来的にインストーラー配布を予定しています。
+- **Node.jsが無い場合は？**
+  - [Node.js公式サイト](https://nodejs.org/ja/) からインストールしてください。
+- **起動できない場合は？**
+  - ターミナルのエラーメッセージを確認し、`npm install` の実行やNode.jsのバージョンを見直してください。
+
+---
+
 Built with ❤️ for efficient Superwhisper workflow automation.
