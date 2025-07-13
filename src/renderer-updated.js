@@ -500,6 +500,8 @@ function renderModes(modes) {
 function initializeDragAndDrop(tile) {
   tile.addEventListener('dragstart', handleDragStart);
   tile.addEventListener('dragover', handleDragOver);
+  tile.addEventListener('dragenter', handleDragEnter);
+  tile.addEventListener('dragleave', handleDragLeave);
   tile.addEventListener('drop', handleDrop);
   tile.addEventListener('dragend', handleDragEnd);
 }
@@ -507,8 +509,16 @@ function initializeDragAndDrop(tile) {
 function handleDragStart(e) {
   draggedElement = this;
   this.classList.add('dragging');
+  modesGrid.classList.add('dragging');
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('text/html', this.innerHTML);
+
+  // ドラッグ開始時のフィードバック
+  setTimeout(() => {
+    if (draggedElement) {
+      draggedElement.style.transform = 'rotate(5deg) scale(1.05)';
+    }
+  }, 0);
 }
 
 function handleDragOver(e) {
@@ -517,7 +527,7 @@ function handleDragOver(e) {
   }
   e.dataTransfer.dropEffect = 'move';
 
-  const afterElement = getDragAfterElement(modesGrid, e.clientY);
+  const afterElement = getDragAfterElement(modesGrid, e.clientX, e.clientY);
   if (afterElement == null) {
     modesGrid.appendChild(draggedElement);
   } else {
@@ -527,21 +537,57 @@ function handleDragOver(e) {
   return false;
 }
 
+function handleDragEnter(e) {
+  if (e.preventDefault) {
+    e.preventDefault();
+  }
+  if (this !== draggedElement) {
+    this.classList.add('drop-zone');
+  }
+}
+
+function handleDragLeave(e) {
+  if (this !== draggedElement) {
+    this.classList.remove('drop-zone');
+  }
+}
+
 function handleDrop(e) {
   if (e.stopPropagation) {
     e.stopPropagation();
   }
+  if (e.preventDefault) {
+    e.preventDefault();
+  }
+
+  // ドロップゾーンのクリア
+  document.querySelectorAll('.mode-tile').forEach((tile) => {
+    tile.classList.remove('drop-zone');
+  });
 
   saveModesOrder();
+  showNotification('モードの順序を更新しました', 'success');
   return false;
 }
 
 function handleDragEnd(e) {
   this.classList.remove('dragging');
+  modesGrid.classList.remove('dragging');
+
+  // すべてのドラッグ関連クラスをクリア
+  document.querySelectorAll('.mode-tile').forEach((tile) => {
+    tile.classList.remove('drop-zone', 'drag-over');
+  });
+
+  // スタイルをリセット
+  if (draggedElement) {
+    draggedElement.style.transform = '';
+  }
+
   draggedElement = null;
 }
 
-function getDragAfterElement(container, y) {
+function getDragAfterElement(container, x, y) {
   const draggableElements = [
     ...container.querySelectorAll('.mode-tile:not(.dragging)'),
   ];
@@ -549,15 +595,22 @@ function getDragAfterElement(container, y) {
   return draggableElements.reduce(
     (closest, child) => {
       const box = child.getBoundingClientRect();
-      const offset = y - box.top - box.height / 2;
+      const centerX = box.left + box.width / 2;
+      const centerY = box.top + box.height / 2;
 
-      if (offset < 0 && offset > closest.offset) {
-        return { offset: offset, element: child };
+      // グリッドレイアウトを考慮した距離計算
+      const distance = Math.sqrt(
+        Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2)
+      );
+
+      // より近い要素を選択
+      if (distance < closest.distance) {
+        return { distance: distance, element: child };
       } else {
         return closest;
       }
     },
-    { offset: Number.NEGATIVE_INFINITY }
+    { distance: Number.POSITIVE_INFINITY }
   ).element;
 }
 
@@ -566,7 +619,13 @@ async function saveModesOrder() {
   const order = tiles.map((tile) => tile.dataset.key);
 
   settings.modesOrder = order;
-  await window.electronAPI.updateSettings({ modesOrder: order });
+
+  try {
+    await window.electronAPI.updateSettings({ modesOrder: order });
+  } catch (error) {
+    console.error('並び順の保存に失敗しました:', error);
+    showNotification('並び順の保存に失敗しました', 'error');
+  }
 }
 
 // モードの起動
