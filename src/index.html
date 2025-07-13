@@ -1,70 +1,121 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Superwhisper Launcher</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src 'self';
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' data:;"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
     <div class="container">
-        <div class="header">
-            <h1>🎤 Superwhisper Launcher</h1>
-            <div class="controls">
-                <span class="shortcuts-hint">Cmd+1-9/0 で直接起動</span>
-                <button class="settings-btn" onclick="openSettings()">⚙️</button>
-                <button class="close-btn" onclick="closeApp()">×</button>
-            </div>
+      <div class="header">
+        <h1>🎤 Superwhisper Launcher</h1>
+        <div class="controls">
+          <span class="shortcuts-hint">Cmd+1-9/0 で直接起動</span>
+          <button class="settings-btn" onclick="openSettings()">⚙️</button>
+          <button class="close-btn" onclick="closeApp()">×</button>
         </div>
-        
-        <div class="modes-grid" id="modesGrid">
-            <div class="loading">
-                <div class="spinner"></div>
-                <p>モードを読み込み中...</p>
-            </div>
+      </div>
+
+      <!-- 検索・フィルター機能 -->
+      <div class="search-container">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="モードを検索..."
+          class="search-input"
+        />
+        <select id="categoryFilter" class="category-filter">
+          <option value="">すべてのカテゴリー</option>
+        </select>
+      </div>
+
+      <div class="modes-grid" id="modesGrid">
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>モードを読み込み中...</p>
         </div>
-        
-        <div class="footer">
-            <div class="help-text">
-                <span>クリックでモード起動 • ESCで閉じる • Cmd+Shift+Wで再表示</span>
-            </div>
+      </div>
+
+      <div class="footer">
+        <div class="help-text">
+          <span>クリックでモード起動 • ESCで閉じる • Cmd+Shift+Wで再表示</span>
         </div>
+      </div>
     </div>
 
     <!-- 設定モーダル -->
-    <div class="modal" id="settingsModal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>設定</h2>
-                <button class="close-btn" onclick="closeSettings()">×</button>
-            </div>
-            <div class="modal-body">
-                <div class="settings-section">
-                    <h3>アイコン設定</h3>
-                    <div id="iconSettings" class="icon-settings">
-                        <!-- アイコン設定がここに動的に追加される -->
-                    </div>
-                </div>
-                <div class="settings-section">
-                    <h3>ショートカット</h3>
-                    <div class="shortcut-settings">
-                        <div class="shortcut-item">
-                            <label>ランチャーを開く:</label>
-                            <div class="shortcut-input-wrapper">
-                                <input type="text" id="launcherShortcut" class="shortcut-input" readonly>
-                                <button class="shortcut-btn" onclick="recordShortcut('launcher')">変更</button>
-                            </div>
-                        </div>
-                        <div class="shortcut-info">
-                            <p><strong>Cmd+1-9/0</strong> - モード直接起動</p>
-                            <p><strong>ESC</strong> - ランチャーを閉じる</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <div class="modal" id="settingsModal" style="display: none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>設定</h2>
+          <button class="close-btn" onclick="closeSettings()">×</button>
         </div>
+        <div class="modal-body">
+          <div class="settings-section">
+            <h3>アイコン設定</h3>
+            <div id="iconSettings" class="icon-settings">
+              <!-- アイコン設定がここに動的に追加される -->
+            </div>
+          </div>
+          <div class="settings-section">
+            <h3>ショートカット</h3>
+            <div class="shortcut-settings">
+              <div class="shortcut-item">
+                <label>ランチャーを開く:</label>
+                <div class="shortcut-input-wrapper">
+                  <input
+                    type="text"
+                    id="launcherShortcut"
+                    class="shortcut-input"
+                    readonly
+                  />
+                  <button
+                    class="shortcut-btn"
+                    onclick="recordShortcut('launcher')"
+                  >
+                    変更
+                  </button>
+                </div>
+              </div>
+              <div class="shortcut-info">
+                <p><strong>Cmd+1-9/0</strong> - モード直接起動</p>
+                <p><strong>ESC</strong> - ランチャーを閉じる</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3>テーマ</h3>
+            <div class="theme-settings">
+              <select id="themeSelect" class="theme-select">
+                <option value="system">システム設定に従う</option>
+                <option value="light">ライト</option>
+                <option value="dark">ダーク</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="button button-primary" onclick="saveSettings()">
+              保存
+            </button>
+            <button class="button button-secondary" onclick="closeSettings()">
+              キャンセル
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <script src="renderer.js"></script>
-</body>
+    <script src="renderer-updated.js"></script>
+  </body>
 </html>

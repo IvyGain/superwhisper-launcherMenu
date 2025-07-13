@@ -1,4 +1,13 @@
-const { app, BrowserWindow, ipcMain, shell, globalShortcut, Tray, Menu, nativeImage } = require('electron');
+const {
+  app,
+  BrowserWindow,
+  ipcMain,
+  shell,
+  globalShortcut,
+  Tray,
+  Menu,
+  nativeImage,
+} = require('electron');
 const path = require('path');
 const fs = require('fs');
 const chokidar = require('chokidar');
@@ -29,8 +38,9 @@ function createWindow() {
     minWidth: 600,
     minHeight: 400,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'),
     },
     show: false, // 初期状態では非表示
     skipTaskbar: true,
@@ -39,11 +49,11 @@ function createWindow() {
     alwaysOnTop: true,
     transparent: false,
     backgroundColor: '#ffffff',
-    titleBarStyle: 'hidden'
+    titleBarStyle: 'hidden',
   });
 
   mainWindow.loadFile('src/index.html');
-  
+
   // ウィンドウが閉じられたときの処理
   mainWindow.on('closed', () => {
     mainWindow = null;
@@ -62,10 +72,10 @@ function createTray() {
   try {
     // 16x16のシンプルなアイコンを作成
     const iconBuffer = Buffer.from([
-      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
       0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x10,
-      0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0xF3, 0xFF, 0x61, 0x00, 0x00, 0x00,
-      0x85, 0x49, 0x44, 0x41, 0x54, 0x38, 0x8D, 0x63, 0x60, 0x18, 0x05, 0x40,
+      0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0xf3, 0xff, 0x61, 0x00, 0x00, 0x00,
+      0x85, 0x49, 0x44, 0x41, 0x54, 0x38, 0x8d, 0x63, 0x60, 0x18, 0x05, 0x40,
       0x00, 0x00, 0x81, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -76,9 +86,9 @@ function createTray() {
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
+      0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
     ]);
-    
+
     const trayIcon = nativeImage.createFromBuffer(iconBuffer);
     tray = new Tray(trayIcon);
   } catch (error) {
@@ -91,35 +101,35 @@ function createTray() {
       return; // トレイ作成を諦める
     }
   }
-  
+
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Superwhisper Launcher',
-      enabled: false
+      enabled: false,
     },
     { type: 'separator' },
     {
       label: 'ランチャーを開く',
-      click: () => showWindow()
+      click: () => showWindow(),
     },
     {
       label: 'モードを再読み込み',
-      click: () => loadModes()
+      click: () => loadModes(),
     },
     { type: 'separator' },
     {
       label: '設定',
-      click: () => openSettings()
+      click: () => openSettings(),
     },
     {
       label: '終了',
-      click: () => app.quit()
-    }
+      click: () => app.quit(),
+    },
   ]);
 
   tray.setToolTip('Superwhisper Launcher');
   tray.setContextMenu(contextMenu);
-  
+
   // トレイアイコンクリックでウィンドウを表示
   tray.on('click', () => {
     showWindow();
@@ -139,12 +149,12 @@ function setupGlobalShortcuts() {
   try {
     // 既存のショートカットを削除
     globalShortcut.unregisterAll();
-    
+
     // 設定から現在のショートカットを取得
     const shortcuts = store.get('shortcuts', {
-      launcher: 'CommandOrControl+Shift+W'
+      launcher: 'CommandOrControl+Shift+W',
     });
-    
+
     // メインランチャーのショートカット
     globalShortcut.register(shortcuts.launcher, () => {
       showWindow();
@@ -166,8 +176,13 @@ function setupGlobalShortcuts() {
 
 // モードフォルダの監視
 function watchModesFolder() {
-  const modesPath = path.join(require('os').homedir(), 'Documents', 'superwhisper', 'modes');
-  
+  const modesPath = path.join(
+    require('os').homedir(),
+    'Documents',
+    'superwhisper',
+    'modes'
+  );
+
   if (fs.existsSync(modesPath)) {
     try {
       const watcher = chokidar.watch(modesPath, {
@@ -176,8 +191,8 @@ function watchModesFolder() {
         depth: 0, // サブディレクトリを監視しない
         awaitWriteFinish: {
           stabilityThreshold: 1000,
-          pollInterval: 100
-        }
+          pollInterval: 100,
+        },
       });
 
       watcher.on('change', (path) => {
@@ -200,7 +215,7 @@ function watchModesFolder() {
           debounceLoadModes();
         }
       });
-      
+
       console.log('ファイル監視開始:', modesPath);
     } catch (error) {
       console.log('ファイル監視エラー:', error);
@@ -221,7 +236,12 @@ function debounceLoadModes() {
 
 // モードファイルの読み込み
 function loadModes() {
-  const modesPath = path.join(require('os').homedir(), 'Documents', 'superwhisper', 'modes');
+  const modesPath = path.join(
+    require('os').homedir(),
+    'Documents',
+    'superwhisper',
+    'modes'
+  );
   modesData = [];
 
   if (!fs.existsSync(modesPath)) {
@@ -235,22 +255,25 @@ function loadModes() {
 
   try {
     const files = fs.readdirSync(modesPath);
-    
+
     for (const file of files) {
       if (file.endsWith('.json')) {
         try {
           const filePath = path.join(modesPath, file);
           const content = fs.readFileSync(filePath, 'utf8');
           const mode = JSON.parse(content);
-          
+
           if (mode.key && mode.name) {
             // カスタムアイコンの取得（モード名とプロンプトを考慮）
-            const customIcon = store.get(`icons.${mode.key}`, getDefaultIcon(mode.type, mode.name, mode.prompt));
-            
+            const customIcon = store.get(
+              `icons.${mode.key}`,
+              getDefaultIcon(mode.type, mode.name, mode.prompt)
+            );
+
             modesData.push({
               ...mode,
               fileName: file,
-              icon: customIcon
+              icon: customIcon,
             });
           }
         } catch (error) {
@@ -263,7 +286,7 @@ function loadModes() {
     if (mainWindow) {
       mainWindow.webContents.send('modes-updated', modesData);
     }
-    
+
     console.log(`${modesData.length}個のモードを読み込みました`);
   } catch (error) {
     console.error('モード読み込みエラー:', error);
@@ -274,32 +297,32 @@ function loadModes() {
 function getDefaultIcon(type, modeName = '', prompt = '') {
   // より詳細な絵文字マッピング
   const iconMap = {
-    'message': '💬',
-    'email': '📧', 
-    'note': '📝',
-    'voice': '🎤',
-    'custom': '⚙️',
-    'chat': '💭',
-    'translation': '🌐',
-    'summary': '📋',
-    'code': '💻',
-    'creative': '🎨',
-    'writing': '✍️',
-    'business': '💼',
-    'social': '🤝',
-    'learning': '📚',
-    'music': '🎵',
-    'design': '🎨',
-    'presentation': '📊',
-    'meeting': '👥',
-    'planning': '📅',
-    'research': '🔍'
+    message: '💬',
+    email: '📧',
+    note: '📝',
+    voice: '🎤',
+    custom: '⚙️',
+    chat: '💭',
+    translation: '🌐',
+    summary: '📋',
+    code: '💻',
+    creative: '🎨',
+    writing: '✍️',
+    business: '💼',
+    social: '🤝',
+    learning: '📚',
+    music: '🎵',
+    design: '🎨',
+    presentation: '📊',
+    meeting: '👥',
+    planning: '📅',
+    research: '🔍',
   };
-  
+
   // モード名やプロンプトから推測
   if (modeName || prompt) {
     const text = (modeName + ' ' + prompt).toLowerCase();
-    
+
     if (text.includes('自己紹介') || text.includes('プロフィール')) return '👋';
     if (text.includes('メール') || text.includes('mail')) return '📧';
     if (text.includes('ブログ') || text.includes('記事')) return '📝';
@@ -316,7 +339,7 @@ function getDefaultIcon(type, modeName = '', prompt = '') {
     if (text.includes('ビジネス') || text.includes('商談')) return '💼';
     if (text.includes('クリエイティブ') || text.includes('創作')) return '✨';
   }
-  
+
   return iconMap[type] || '🎯';
 }
 
@@ -332,14 +355,14 @@ function launchMode(modeKey) {
   try {
     // Superwhisperを起動
     shell.openExternal(`superwhisper://mode?key=${modeKey}`);
-    
+
     // 録音を開始
     setTimeout(() => {
       shell.openExternal('superwhisper://record');
     }, 500);
-    
+
     console.log(`モード起動: ${modeKey}`);
-    
+
     // ウィンドウを隠す
     if (mainWindow) {
       mainWindow.hide();
@@ -354,18 +377,58 @@ function openSettings() {
   console.log('設定画面 - 実装予定');
 }
 
-// IPCイベントハンドラ
-ipcMain.on('launch-mode', (event, modeKey) => {
+// IPCイベントハンドラ - handle を使用してセキュアに
+ipcMain.handle('launch-mode', async (event, modeKey) => {
   launchMode(modeKey);
 });
 
-ipcMain.on('get-modes', (event) => {
-  event.reply('modes-updated', modesData);
+ipcMain.handle('get-modes', async () => {
+  return modesData;
 });
 
-ipcMain.on('update-icon', (event, modeKey, icon) => {
-  store.set(`icons.${modeKey}`, icon);
-  loadModes(); // モードを再読み込み
+ipcMain.handle('update-settings', async (event, settings) => {
+  if (settings.icons) {
+    Object.entries(settings.icons).forEach(([key, icon]) => {
+      store.set(`icons.${key}`, icon);
+    });
+    loadModes();
+  }
+  if (settings.shortcuts) {
+    store.set('shortcuts', settings.shortcuts);
+    setupGlobalShortcuts();
+  }
+  if (settings.theme) {
+    store.set('theme', settings.theme);
+  }
+  if (settings.modesOrder) {
+    store.set('modesOrder', settings.modesOrder);
+  }
+});
+
+ipcMain.handle('get-settings', async () => {
+  return {
+    shortcuts: store.get('shortcuts', { launcher: 'CommandOrControl+Shift+W' }),
+    theme: store.get('theme', 'system'),
+    modesOrder: store.get('modesOrder', []),
+    icons: store.get('icons', {}),
+  };
+});
+
+ipcMain.handle('show-open-dialog', async () => {
+  const { dialog } = require('electron');
+  const result = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    filters: [{ name: 'JSON Files', extensions: ['json'] }],
+  });
+  return result;
+});
+
+ipcMain.handle('open-external', async (event, url) => {
+  shell.openExternal(url);
+});
+
+ipcMain.handle('get-app-version', async () => {
+  return app.getVersion();
 });
 
 // アプリケーションの終了処理
@@ -387,58 +450,7 @@ app.on('will-quit', () => {
   globalShortcut.unregisterAll();
 });
 
-// ショートカット設定の取得
-ipcMain.handle('get-shortcut-settings', () => {
-  return store.get('shortcuts', {
-    launcher: 'CommandOrControl+Shift+W'
-  });
-});
-
-// ショートカット設定の更新
-ipcMain.handle('update-shortcut', (event, type, shortcut) => {
-  const shortcuts = store.get('shortcuts', {
-    launcher: 'CommandOrControl+Shift+W'
-  });
-  
-  shortcuts[type] = shortcut;
-  store.set('shortcuts', shortcuts);
-  
-  // グローバルショートカットを再設定
-  setupGlobalShortcuts();
-  
-  return shortcuts;
-});
-
-// ショートカット設定の送信
-ipcMain.on('get-shortcut-settings', (event) => {
-  const shortcuts = store.get('shortcuts', {
-    launcher: 'CommandOrControl+Shift+W'
-  });
-  
-  // 表示用に変換
-  const displayShortcuts = {
-    launcher: shortcuts.launcher.replace('CommandOrControl', 'Cmd').replace('+', '+')
-  };
-  
-  event.reply('shortcut-settings-updated', displayShortcuts);
-});
-
-// ショートカット更新
-ipcMain.on('update-shortcut', (event, type, shortcut) => {
-  const shortcuts = store.get('shortcuts', {
-    launcher: 'CommandOrControl+Shift+W'
-  });
-  
-  shortcuts[type] = shortcut;
-  store.set('shortcuts', shortcuts);
-  
-  // グローバルショートカットを再設定
-  setupGlobalShortcuts();
-  
-  // 表示用に変換
-  const displayShortcuts = {
-    launcher: shortcuts.launcher.replace('CommandOrControl', 'Cmd').replace('+', '+')
-  };
-  
-  event.reply('shortcut-settings-updated', displayShortcuts);
+// 旧APIとの互換性のためのイベントリスナー
+ipcMain.on('modes-updated-request', (event) => {
+  event.reply('modes-updated', modesData);
 });

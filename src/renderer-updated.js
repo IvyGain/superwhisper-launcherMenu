@@ -1,5 +1,3 @@
-const { ipcRenderer } = require('electron');
-
 // DOM要素
 const modesGrid = document.getElementById('modesGrid');
 const settingsModal = document.getElementById('settingsModal');
@@ -7,6 +5,8 @@ const iconSettings = document.getElementById('iconSettings');
 
 // モードデータ
 let currentModes = [];
+let draggedElement = null;
+let settings = {};
 
 // Mac絵文字リスト（カテゴリ別）
 const emojiCategories = {
@@ -280,11 +280,87 @@ const emojiCategories = {
 const emojiList = Object.values(emojiCategories).flat();
 
 // 初期化
-document.addEventListener('DOMContentLoaded', () => {
-  requestModes();
+document.addEventListener('DOMContentLoaded', async () => {
+  // 検索とフィルター機能の初期化
+  initializeSearchAndFilter();
+  // テーマの初期化
+  initializeTheme();
+  // 設定の読み込み
+  await loadSettings();
+  // モードデータの取得
+  await requestModes();
+  // イベントリスナーの設定
   setupEventListeners();
-  loadShortcutSettings();
 });
+
+// 検索・フィルター機能の初期化
+function initializeSearchAndFilter() {
+  const searchInput = document.getElementById('searchInput');
+  const categoryFilter = document.getElementById('categoryFilter');
+
+  if (searchInput) {
+    searchInput.addEventListener('input', filterModes);
+  }
+  if (categoryFilter) {
+    categoryFilter.addEventListener('change', filterModes);
+  }
+}
+
+// モードのフィルタリング
+function filterModes() {
+  const searchTerm =
+    document.getElementById('searchInput')?.value.toLowerCase() || '';
+  const selectedCategory =
+    document.getElementById('categoryFilter')?.value || '';
+  const tiles = document.querySelectorAll('.mode-tile');
+
+  tiles.forEach((tile) => {
+    const modeName =
+      tile.querySelector('.mode-name')?.textContent.toLowerCase() || '';
+    const category = tile.dataset.category || '';
+
+    const matchesSearch = modeName.includes(searchTerm);
+    const matchesCategory = !selectedCategory || category === selectedCategory;
+
+    tile.style.display = matchesSearch && matchesCategory ? '' : 'none';
+  });
+}
+
+// カテゴリーの更新
+function updateCategories(modes) {
+  const categories = [...new Set(modes.map((m) => m.category).filter(Boolean))];
+  const categoryFilter = document.getElementById('categoryFilter');
+
+  if (categoryFilter) {
+    categoryFilter.innerHTML = '<option value="">すべてのカテゴリー</option>';
+    categories.forEach((cat) => {
+      categoryFilter.innerHTML += `<option value="${cat}">${cat}</option>`;
+    });
+  }
+}
+
+// テーマ管理
+function initializeTheme() {
+  const savedTheme = settings.theme || 'system';
+  applyTheme(savedTheme);
+
+  // システムテーマの変更を監視
+  window
+    .matchMedia('(prefers-color-scheme: dark)')
+    .addEventListener('change', () => {
+      if (settings.theme === 'system') {
+        applyTheme('system');
+      }
+    });
+}
+
+function applyTheme(theme) {
+  if (theme === 'system') {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+}
 
 // イベントリスナーの設定
 function setupEventListeners() {
@@ -308,26 +384,76 @@ function setupEventListeners() {
   });
 
   // モーダルの外側をクリックで閉じる
-  settingsModal.addEventListener('click', (e) => {
+  settingsModal?.addEventListener('click', (e) => {
     if (e.target === settingsModal) {
       closeSettings();
     }
   });
 }
 
-// モードデータの要求
-function requestModes() {
-  ipcRenderer.send('get-modes');
+// 設定の読み込み
+async function loadSettings() {
+  try {
+    settings = await window.electronAPI.getSettings();
+
+    // ショートカット設定の表示
+    const launcherInput = document.getElementById('launcherShortcut');
+    if (launcherInput && settings.shortcuts) {
+      launcherInput.value = settings.shortcuts.launcher.replace(
+        'CommandOrControl',
+        'Cmd'
+      );
+    }
+
+    // テーマ設定の表示
+    const themeSelect = document.getElementById('themeSelect');
+    if (themeSelect && settings.theme) {
+      themeSelect.value = settings.theme;
+    }
+
+    applyTheme(settings.theme || 'system');
+  } catch (error) {
+    console.error('設定の読み込みエラー:', error);
+  }
 }
 
-// IPCからのモードデータ更新
-ipcRenderer.on('modes-updated', (event, modes) => {
-  currentModes = modes;
-  renderModes(modes);
-});
+// モードデータの要求
+async function requestModes() {
+  try {
+    const modes = await window.electronAPI.getModes();
+    currentModes = modes;
+
+    // 並び順の適用
+    if (settings.modesOrder && settings.modesOrder.length > 0) {
+      currentModes.sort((a, b) => {
+        const indexA = settings.modesOrder.indexOf(a.key);
+        const indexB = settings.modesOrder.indexOf(b.key);
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+      });
+    }
+
+    renderModes(currentModes);
+    updateCategories(currentModes);
+  } catch (error) {
+    console.error('モード取得エラー:', error);
+  }
+}
+
+// モード更新の監視
+if (window.electronAPI.onModesUpdate) {
+  window.electronAPI.onModesUpdate((event, modes) => {
+    currentModes = modes;
+    renderModes(modes);
+    updateCategories(modes);
+  });
+}
 
 // モードの表示
 function renderModes(modes) {
+  if (!modesGrid) return;
+
   if (modes.length === 0) {
     modesGrid.innerHTML = `
             <div class="no-modes">
@@ -348,7 +474,7 @@ function renderModes(modes) {
         index < 9 ? (index + 1).toString() : index === 9 ? '0' : '';
 
       return `
-            <div class="mode-tile" onclick="launchMode('${mode.key}')" data-key="${mode.key}">
+            <div class="mode-tile" data-key="${mode.key}" data-category="${mode.category || ''}" draggable="true">
                 ${shortcutKey ? `<div class="mode-shortcut">${shortcutKey}</div>` : ''}
                 <div class="mode-icon">${mode.icon}</div>
                 <div class="mode-name">${escapeHtml(mode.name)}</div>
@@ -357,10 +483,94 @@ function renderModes(modes) {
         `;
     })
     .join('');
+
+  // クリックイベントとドラッグイベントの設定
+  document.querySelectorAll('.mode-tile').forEach((tile) => {
+    tile.addEventListener('click', () => {
+      const modeKey = tile.dataset.key;
+      launchMode(modeKey);
+    });
+
+    // ドラッグ＆ドロップイベント
+    initializeDragAndDrop(tile);
+  });
+}
+
+// ドラッグ＆ドロップ機能
+function initializeDragAndDrop(tile) {
+  tile.addEventListener('dragstart', handleDragStart);
+  tile.addEventListener('dragover', handleDragOver);
+  tile.addEventListener('drop', handleDrop);
+  tile.addEventListener('dragend', handleDragEnd);
+}
+
+function handleDragStart(e) {
+  draggedElement = this;
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/html', this.innerHTML);
+}
+
+function handleDragOver(e) {
+  if (e.preventDefault) {
+    e.preventDefault();
+  }
+  e.dataTransfer.dropEffect = 'move';
+
+  const afterElement = getDragAfterElement(modesGrid, e.clientY);
+  if (afterElement == null) {
+    modesGrid.appendChild(draggedElement);
+  } else {
+    modesGrid.insertBefore(draggedElement, afterElement);
+  }
+
+  return false;
+}
+
+function handleDrop(e) {
+  if (e.stopPropagation) {
+    e.stopPropagation();
+  }
+
+  saveModesOrder();
+  return false;
+}
+
+function handleDragEnd(e) {
+  this.classList.remove('dragging');
+  draggedElement = null;
+}
+
+function getDragAfterElement(container, y) {
+  const draggableElements = [
+    ...container.querySelectorAll('.mode-tile:not(.dragging)'),
+  ];
+
+  return draggableElements.reduce(
+    (closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+
+      if (offset < 0 && offset > closest.offset) {
+        return { offset: offset, element: child };
+      } else {
+        return closest;
+      }
+    },
+    { offset: Number.NEGATIVE_INFINITY }
+  ).element;
+}
+
+async function saveModesOrder() {
+  const tiles = [...document.querySelectorAll('.mode-tile')];
+  const order = tiles.map((tile) => tile.dataset.key);
+
+  settings.modesOrder = order;
+  await window.electronAPI.updateSettings({ modesOrder: order });
 }
 
 // モードの起動
-function launchMode(modeKey) {
+async function launchMode(modeKey) {
   // 視覚的フィードバック
   const tile = document.querySelector(`[data-key="${modeKey}"]`);
   if (tile) {
@@ -371,7 +581,7 @@ function launchMode(modeKey) {
   }
 
   // メインプロセスにモード起動を通知
-  ipcRenderer.send('launch-mode', modeKey);
+  await window.electronAPI.launchMode(modeKey);
 
   // 通知表示
   showNotification(`モード "${modeKey}" を起動しました`, 'success');
@@ -379,12 +589,7 @@ function launchMode(modeKey) {
 
 // アプリを閉じる
 function closeApp() {
-  if (window.require) {
-    const { remote } = window.require('electron');
-    if (remote && remote.getCurrentWindow) {
-      remote.getCurrentWindow().hide();
-    }
-  }
+  window.close();
 }
 
 // 設定画面を開く
@@ -398,8 +603,23 @@ function closeSettings() {
   settingsModal.style.display = 'none';
 }
 
+// 設定の保存
+async function saveSettings() {
+  const themeSelect = document.getElementById('themeSelect');
+  if (themeSelect) {
+    settings.theme = themeSelect.value;
+    await window.electronAPI.updateSettings({ theme: themeSelect.value });
+    applyTheme(themeSelect.value);
+  }
+
+  showNotification('設定を保存しました', 'success');
+  closeSettings();
+}
+
 // アイコン設定の表示
 function renderIconSettings() {
+  if (!iconSettings) return;
+
   if (currentModes.length === 0) {
     iconSettings.innerHTML = '<p>設定可能なモードがありません</p>';
     return;
@@ -426,7 +646,7 @@ function renderIconSettings() {
 }
 
 // 絵文字ピッカーの表示
-function showEmojiPicker(modeKey, button) {
+window.showEmojiPicker = function (modeKey, button) {
   // 既存のピッカーを削除
   const existingPicker = document.querySelector('.emoji-picker');
   if (existingPicker) {
@@ -437,8 +657,8 @@ function showEmojiPicker(modeKey, button) {
   picker.className = 'emoji-picker';
   picker.style.cssText = `
         position: fixed;
-        background: white;
-        border: 1px solid #ddd;
+        background: var(--background-color);
+        border: 1px solid var(--border-color);
         border-radius: 15px;
         padding: 0;
         box-shadow: 0 20px 40px rgba(0,0,0,0.3);
@@ -459,10 +679,10 @@ function showEmojiPicker(modeKey, button) {
   const header = document.createElement('div');
   header.style.cssText = `
         padding: 15px;
-        background: #f8f9fa;
-        border-bottom: 1px solid #eee;
+        background: var(--tile-bg);
+        border-bottom: 1px solid var(--border-color);
         font-weight: 600;
-        color: #333;
+        color: var(--text-color);
     `;
   header.textContent = '絵文字を選択';
   picker.appendChild(header);
@@ -485,10 +705,11 @@ function showEmojiPicker(modeKey, button) {
     categoryTitle.style.cssText = `
             font-size: 0.9em;
             font-weight: 600;
-            color: #666;
+            color: var(--text-color);
+            opacity: 0.7;
             margin-bottom: 10px;
             padding-bottom: 5px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--border-color);
         `;
     categoryDiv.appendChild(categoryTitle);
 
@@ -512,7 +733,7 @@ function showEmojiPicker(modeKey, button) {
                 transition: background 0.2s;
             `;
       emojiBtn.addEventListener('mouseenter', () => {
-        emojiBtn.style.background = '#f0f0f0';
+        emojiBtn.style.background = 'var(--tile-hover-bg)';
       });
       emojiBtn.addEventListener('mouseleave', () => {
         emojiBtn.style.background = 'none';
@@ -543,11 +764,13 @@ function showEmojiPicker(modeKey, button) {
   setTimeout(() => {
     document.addEventListener('click', closeHandler);
   }, 100);
-}
+};
 
 // アイコンの更新
-function updateIcon(modeKey, icon) {
-  ipcRenderer.send('update-icon', modeKey, icon);
+async function updateIcon(modeKey, icon) {
+  const icons = settings.icons || {};
+  icons[modeKey] = icon;
+  await window.electronAPI.updateSettings({ icons });
   showNotification('アイコンを更新しました', 'success');
 }
 
@@ -589,43 +812,18 @@ function showNotification(message, type = 'info') {
   }, 3000);
 }
 
-// アニメーション用CSS
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideInRight {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOutRight {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100%); opacity: 0; }
-    }
-`;
-document.head.appendChild(style);
-
-// ショートカット設定の読み込み
-function loadShortcutSettings() {
-  ipcRenderer.send('get-shortcut-settings');
-}
-
-// ショートカット設定の受信
-ipcRenderer.on('shortcut-settings-updated', (event, settings) => {
-  const launcherInput = document.getElementById('launcherShortcut');
-  if (launcherInput) {
-    launcherInput.value = settings.launcher || 'Cmd+Shift+W';
-  }
-});
-
 // ショートカット記録の状態管理
 let recordingShortcut = null;
 let recordingKeys = [];
 
 // ショートカットの記録
-function recordShortcut(type) {
+window.recordShortcut = function (type) {
   const button = document.querySelector(
     `button[onclick="recordShortcut('${type}')"]`
   );
   const input = document.getElementById(`${type}Shortcut`);
+
+  if (!button || !input) return;
 
   if (recordingShortcut) {
     // 既に記録中の場合はキャンセル
@@ -652,7 +850,7 @@ function recordShortcut(type) {
       stopRecording();
     }
   }, 10000);
-}
+};
 
 function handleShortcutKeydown(e) {
   if (!recordingShortcut) return;
@@ -702,6 +900,8 @@ function handleShortcutKeyup(e) {
 
 function updateShortcutDisplay() {
   const input = document.getElementById(`${recordingShortcut}Shortcut`);
+  if (!input) return;
+
   const displayKeys = recordingKeys.map((key) => {
     switch (key) {
       case 'Meta':
@@ -720,7 +920,7 @@ function updateShortcutDisplay() {
   input.value = displayKeys.join('+');
 }
 
-function finishRecording() {
+async function finishRecording() {
   if (!recordingShortcut || recordingKeys.length === 0) {
     stopRecording();
     return;
@@ -743,8 +943,10 @@ function finishRecording() {
     })
     .join('+');
 
-  // メインプロセスに送信
-  ipcRenderer.send('update-shortcut', recordingShortcut, shortcutString);
+  // 設定を更新
+  const shortcuts = settings.shortcuts || {};
+  shortcuts[recordingShortcut] = shortcutString;
+  await window.electronAPI.updateSettings({ shortcuts });
 
   showNotification('ショートカットを更新しました', 'success');
   stopRecording();
@@ -761,13 +963,37 @@ function stopRecording() {
   );
   const input = document.getElementById(`${recordingShortcut}Shortcut`);
 
-  button.textContent = '変更';
-  button.disabled = false;
-  input.style.borderColor = '#ddd';
+  if (button) {
+    button.textContent = '変更';
+    button.disabled = false;
+  }
+
+  if (input) {
+    input.style.borderColor = 'var(--border-color)';
+  }
 
   // 現在の設定を再表示
-  loadShortcutSettings();
+  loadSettings();
 
   recordingShortcut = null;
   recordingKeys = [];
 }
+
+// アニメーション用CSS
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOutRight {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
+
+// window関数をグローバルに公開
+window.openSettings = openSettings;
+window.closeSettings = closeSettings;
+window.saveSettings = saveSettings;
