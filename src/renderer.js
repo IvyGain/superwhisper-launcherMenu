@@ -407,7 +407,15 @@ async function loadSettings() {
       launcherInput.value = settings.shortcuts.launcher.replace(
         'CommandOrControl',
         'Cmd'
-      );
+      ).replace('Alt', 'Option');
+    }
+
+    const processAgainInput = document.getElementById('processAgainShortcut');
+    if (processAgainInput && settings.shortcuts) {
+      processAgainInput.value = (settings.shortcuts.processAgain || '未設定').replace(
+        'CommandOrControl',
+        'Cmd'
+      ).replace('Alt', 'Option');
     }
 
     // テーマ設定の表示
@@ -1074,8 +1082,20 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+// プロセスアゲインの実行
+async function executeProcessAgain() {
+  try {
+    await window.electronAPI.processAgain();
+    showNotification('プロセスアゲインを実行しました', 'success');
+  } catch (error) {
+    console.error('プロセスアゲイン実行エラー:', error);
+    showNotification('プロセスアゲインの実行に失敗しました', 'error');
+  }
+}
+
 // window関数をグローバルに公開
 window.openSettings = openSettings;
 window.closeSettings = closeSettings;
 window.saveSettings = saveSettings;
 window.closeApp = closeApp;
+window.executeProcessAgain = executeProcessAgain;

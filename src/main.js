@@ -152,13 +152,21 @@ function setupGlobalShortcuts() {
 
     // 設定から現在のショートカットを取得
     const shortcuts = store.get('shortcuts', {
-      launcher: 'CommandOrControl+Shift+W',
+      launcher: 'Alt+V',
+      processAgain: 'Alt+R',
     });
 
     // メインランチャーのショートカット
     globalShortcut.register(shortcuts.launcher, () => {
       showWindow();
     });
+
+    // プロセスアゲインのショートカット
+    if (shortcuts.processAgain) {
+      globalShortcut.register(shortcuts.processAgain, () => {
+        executeProcessAgain();
+      });
+    }
 
     // 数字キー1-9, 0でモード直接起動
     for (let i = 1; i <= 9; i++) {
@@ -350,6 +358,39 @@ function launchModeByIndex(index) {
   }
 }
 
+// プロセスアゲインの実行
+function executeProcessAgain() {
+  try {
+    // AppleScriptを使用してSuperwhisperのHistoryを開き、最新の項目を再処理
+    const script = `
+      tell application "System Events"
+        try
+          tell application "Superwhisper" to activate
+          delay 0.5
+          keystroke "h" using {command down}
+          delay 1
+          key code 125
+          delay 0.2
+          keystroke return using {control down}
+          delay 0.5
+          click menu item "Process Again" of menu 1 of application process "Superwhisper"
+        on error errorMessage
+          display notification "プロセスアゲインの実行に失敗しました" with title "Superwhisper Launcher"
+        end try
+      end tell
+    `;
+    require('child_process').exec(`osascript -e '${script}'`, (error, stdout, stderr) => {
+      if (error) {
+        console.error('プロセスアゲイン実行エラー:', error);
+      } else {
+        console.log('プロセスアゲインを実行しました');
+      }
+    });
+  } catch (error) {
+    console.error('プロセスアゲイン実行エラー:', error);
+  }
+}
+
 // モードの起動
 function launchMode(modeKey) {
   try {
@@ -407,7 +448,7 @@ ipcMain.handle('update-settings', async (event, settings) => {
 
 ipcMain.handle('get-settings', async () => {
   return {
-    shortcuts: store.get('shortcuts', { launcher: 'CommandOrControl+Shift+W' }),
+    shortcuts: store.get('shortcuts', { launcher: 'Alt+V', processAgain: 'Alt+R' }),
     theme: store.get('theme', 'system'),
     modesOrder: store.get('modesOrder', []),
     icons: store.get('icons', {}),
@@ -429,6 +470,10 @@ ipcMain.handle('open-external', async (event, url) => {
 
 ipcMain.handle('get-app-version', async () => {
   return app.getVersion();
+});
+
+ipcMain.handle('process-again', async () => {
+  executeProcessAgain();
 });
 
 // アプリケーションの終了処理

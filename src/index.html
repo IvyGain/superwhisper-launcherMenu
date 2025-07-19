@@ -20,6 +20,7 @@
         <h1>🎤 Superwhisper Launcher</h1>
         <div class="controls">
           <span class="shortcuts-hint">Cmd+1-9/0 で直接起動</span>
+          <button class="action-btn" onclick="executeProcessAgain()" title="プロセスアゲイン (Alt+R)" style="-webkit-app-region: no-drag;">🔄</button>
           <button class="settings-btn" onclick="openSettings()">⚙️</button>
           <button class="close-btn" onclick="closeApp()">×</button>
         </div>
@@ -47,7 +48,7 @@
 
       <div class="footer">
         <div class="help-text">
-          <span>クリックでモード起動 • ESCで閉じる • Cmd+Shift+Wで再表示</span>
+          <span>クリックでモード起動 • ESCで閉じる • Option+Vで再表示 • Alt+Rでプロセスアゲイン</span>
         </div>
       </div>
     </div>
@@ -81,6 +82,23 @@
                   <button
                     class="shortcut-btn"
                     onclick="recordShortcut('launcher')"
+                  >
+                    変更
+                  </button>
+                </div>
+              </div>
+              <div class="shortcut-item">
+                <label>プロセスアゲイン:</label>
+                <div class="shortcut-input-wrapper">
+                  <input
+                    type="text"
+                    id="processAgainShortcut"
+                    class="shortcut-input"
+                    readonly
+                  />
+                  <button
+                    class="shortcut-btn"
+                    onclick="recordShortcut('processAgain')"
                   >
                     変更
                   </button>

@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   launchMode: (modePath) => ipcRenderer.invoke('launch-mode', modePath),
   updateSettings: (settings) => ipcRenderer.invoke('update-settings', settings),
   getSettings: () => ipcRenderer.invoke('get-settings'),
+  processAgain: () => ipcRenderer.invoke('process-again'),
   onModesUpdate: (callback) => {
     ipcRenderer.on('modes-updated', callback);
     return () => ipcRenderer.removeListener('modes-updated', callback);
