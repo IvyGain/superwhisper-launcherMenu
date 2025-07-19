@@ -672,7 +672,7 @@ function openSettings() {
     settingsModal = document.getElementById('settingsModal');
   }
   if (settingsModal) {
-    renderIconSettings();
+    renderModeSettings();
     settingsModal.style.display = 'flex';
   } else {
     console.error('settingsModal not found');
@@ -702,32 +702,62 @@ async function saveSettings() {
   closeSettings();
 }
 
-// アイコン設定の表示
-function renderIconSettings() {
-  if (!iconSettings) {
-    iconSettings = document.getElementById('iconSettings');
-  }
-  if (!iconSettings) return;
+// モード設定の表示
+function renderModeSettings() {
+  const modeSettings = document.getElementById('modeSettings');
+  if (!modeSettings) return;
 
   if (currentModes.length === 0) {
-    iconSettings.innerHTML = '<p>設定可能なモードがありません</p>';
+    modeSettings.innerHTML = '<p>設定可能なモードがありません</p>';
     return;
   }
 
-  iconSettings.innerHTML = currentModes
+  modeSettings.innerHTML = currentModes
     .map((mode, index) => {
-      const shortcutKey =
+      const defaultShortcutKey =
         index < 9 ? (index + 1).toString() : index === 9 ? '0' : '';
+      const customShortcut = settings.shortcuts?.modes?.[mode.key] || '';
 
       return `
-            <div class="icon-setting-item">
-                <div class="mode-info">
-                    <div class="name">${escapeHtml(mode.name)}</div>
-                    <div class="type">${escapeHtml(mode.type || 'custom')} ${shortcutKey ? `• Cmd+${shortcutKey}` : ''}</div>
+            <div class="mode-setting-item">
+                <div class="mode-header">
+                    <button class="mode-icon-display" onclick="showEmojiPicker('${mode.key}', this)">
+                        ${mode.icon}
+                    </button>
+                    <div class="mode-info">
+                        <div class="name">${escapeHtml(mode.name)}</div>
+                        <div class="type">${escapeHtml(mode.type || 'custom')}</div>
+                    </div>
                 </div>
-                <button class="icon-picker" onclick="showEmojiPicker('${mode.key}', this)">
-                    ${mode.icon}
-                </button>
+                <div class="mode-controls">
+                    ${defaultShortcutKey ? `
+                    <div class="mode-control-row">
+                        <label>デフォルト:</label>
+                        <span class="default-shortcut">Cmd+${defaultShortcutKey}</span>
+                    </div>
+                    ` : ''}
+                    <div class="mode-control-row">
+                        <label>カスタム:</label>
+                        <div class="shortcut-input-wrapper">
+                            <input 
+                                type="text" 
+                                id="mode_${mode.key}_shortcut" 
+                                class="shortcut-input" 
+                                value="${customShortcut}"
+                                readonly 
+                                placeholder="未設定"
+                            />
+                            <button class="shortcut-btn" onclick="recordShortcut('mode_${mode.key}')">
+                                ${customShortcut ? '変更' : '設定'}
+                            </button>
+                            ${customShortcut ? `
+                            <button class="shortcut-btn shortcut-btn-clear" onclick="clearModeShortcut('${mode.key}')">
+                                削除
+                            </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
     })
@@ -910,7 +940,13 @@ window.recordShortcut = function (type) {
   const button = document.querySelector(
     `button[onclick="recordShortcut('${type}')"]`
   );
-  const input = document.getElementById(`${type}Shortcut`);
+  let input;
+  
+  if (type.startsWith('mode_')) {
+    input = document.getElementById(`${type}_shortcut`);
+  } else {
+    input = document.getElementById(`${type}Shortcut`);
+  }
 
   if (!button || !input) return;
 
@@ -988,7 +1024,12 @@ function handleShortcutKeyup(e) {
 }
 
 function updateShortcutDisplay() {
-  const input = document.getElementById(`${recordingShortcut}Shortcut`);
+  let input;
+  if (recordingShortcut.startsWith('mode_')) {
+    input = document.getElementById(`${recordingShortcut}_shortcut`);
+  } else {
+    input = document.getElementById(`${recordingShortcut}Shortcut`);
+  }
   if (!input) return;
 
   const displayKeys = recordingKeys.map((key) => {
@@ -1034,7 +1075,15 @@ async function finishRecording() {
 
   // 設定を更新
   const shortcuts = settings.shortcuts || {};
-  shortcuts[recordingShortcut] = shortcutString;
+  
+  if (recordingShortcut.startsWith('mode_')) {
+    const modeKey = recordingShortcut.replace('mode_', '');
+    if (!shortcuts.modes) shortcuts.modes = {};
+    shortcuts.modes[modeKey] = shortcutString;
+  } else {
+    shortcuts[recordingShortcut] = shortcutString;
+  }
+  
   await window.electronAPI.updateSettings({ shortcuts });
 
   showNotification('ショートカットを更新しました', 'success');
@@ -1050,7 +1099,12 @@ function stopRecording() {
   const button = document.querySelector(
     `button[onclick="recordShortcut('${recordingShortcut}')"]`
   );
-  const input = document.getElementById(`${recordingShortcut}Shortcut`);
+  let input;
+  if (recordingShortcut.startsWith('mode_')) {
+    input = document.getElementById(`${recordingShortcut}_shortcut`);
+  } else {
+    input = document.getElementById(`${recordingShortcut}Shortcut`);
+  }
 
   if (button) {
     button.textContent = '変更';
@@ -1092,6 +1146,17 @@ async function executeProcessAgain() {
     showNotification('プロセスアゲインの実行に失敗しました', 'error');
   }
 }
+
+// モードショートカットの削除
+window.clearModeShortcut = async function (modeKey) {
+  const shortcuts = settings.shortcuts || {};
+  if (shortcuts.modes && shortcuts.modes[modeKey]) {
+    delete shortcuts.modes[modeKey];
+    await window.electronAPI.updateSettings({ shortcuts });
+    showNotification('ショートカットを削除しました', 'success');
+    renderModeSettings(); // 設定画面を更新
+  }
+};
 
 // window関数をグローバルに公開
 window.openSettings = openSettings;

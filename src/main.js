@@ -153,7 +153,7 @@ function setupGlobalShortcuts() {
     // 設定から現在のショートカットを取得
     const shortcuts = store.get('shortcuts', {
       launcher: 'Alt+V',
-      processAgain: 'Alt+R',
+      processAgain: 'Alt+P',
     });
 
     // メインランチャーのショートカット
@@ -168,7 +168,7 @@ function setupGlobalShortcuts() {
       });
     }
 
-    // 数字キー1-9, 0でモード直接起動
+    // 数字キー1-9, 0でモード直接起動（デフォルト）
     for (let i = 1; i <= 9; i++) {
       globalShortcut.register(`CommandOrControl+${i}`, () => {
         launchModeByIndex(i - 1);
@@ -177,6 +177,21 @@ function setupGlobalShortcuts() {
     globalShortcut.register('CommandOrControl+0', () => {
       launchModeByIndex(9);
     });
+
+    // 個別モードのカスタムショートカット
+    if (shortcuts.modes) {
+      Object.entries(shortcuts.modes).forEach(([modeKey, shortcut]) => {
+        if (shortcut && shortcut.trim()) {
+          try {
+            globalShortcut.register(shortcut, () => {
+              launchMode(modeKey);
+            });
+          } catch (error) {
+            console.error(`モード ${modeKey} のショートカット登録エラー:`, error);
+          }
+        }
+      });
+    }
   } catch (error) {
     console.log('グローバルショートカット設定エラー:', error);
   }
@@ -448,7 +463,7 @@ ipcMain.handle('update-settings', async (event, settings) => {
 
 ipcMain.handle('get-settings', async () => {
   return {
-    shortcuts: store.get('shortcuts', { launcher: 'Alt+V', processAgain: 'Alt+R' }),
+    shortcuts: store.get('shortcuts', { launcher: 'Alt+V', processAgain: 'Alt+P' }),
     theme: store.get('theme', 'system'),
     modesOrder: store.get('modesOrder', []),
     icons: store.get('icons', {}),

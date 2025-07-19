@@ -8,7 +8,7 @@
       http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
-        script-src 'self';
+        script-src 'self' 'unsafe-inline';
         style-src 'self' 'unsafe-inline';
         img-src 'self' data:;"
     />
@@ -20,7 +20,7 @@
         <h1>🎤 Superwhisper Launcher</h1>
         <div class="controls">
           <span class="shortcuts-hint">Cmd+1-9/0 で直接起動</span>
-          <button class="action-btn" onclick="executeProcessAgain()" title="プロセスアゲイン (Alt+R)" style="-webkit-app-region: no-drag;">🔄</button>
+          <button class="action-btn" onclick="executeProcessAgain()" title="プロセスアゲイン (Alt+P)" style="-webkit-app-region: no-drag;">🔄</button>
           <button class="settings-btn" onclick="openSettings()">⚙️</button>
           <button class="close-btn" onclick="closeApp()">×</button>
         </div>
@@ -48,7 +48,7 @@
 
       <div class="footer">
         <div class="help-text">
-          <span>クリックでモード起動 • ESCで閉じる • Option+Vで再表示 • Alt+Rでプロセスアゲイン</span>
+          <span>クリックでモード起動 • ESCで閉じる • Option+Vで再表示 • Alt+Pでプロセスアゲイン</span>
         </div>
       </div>
     </div>
@@ -62,13 +62,7 @@
         </div>
         <div class="modal-body">
           <div class="settings-section">
-            <h3>アイコン設定</h3>
-            <div id="iconSettings" class="icon-settings">
-              <!-- アイコン設定がここに動的に追加される -->
-            </div>
-          </div>
-          <div class="settings-section">
-            <h3>ショートカット</h3>
+            <h3>⌨️ ショートカット設定</h3>
             <div class="shortcut-settings">
               <div class="shortcut-item">
                 <label>ランチャーを開く:</label>
@@ -105,20 +99,27 @@
                 </div>
               </div>
               <div class="shortcut-info">
-                <p><strong>Cmd+1-9/0</strong> - モード直接起動</p>
                 <p><strong>ESC</strong> - ランチャーを閉じる</p>
               </div>
             </div>
           </div>
 
           <div class="settings-section">
-            <h3>テーマ</h3>
+            <h3>🎨 テーマ設定</h3>
             <div class="theme-settings">
               <select id="themeSelect" class="theme-select">
                 <option value="system">システム設定に従う</option>
                 <option value="light">ライト</option>
                 <option value="dark">ダーク</option>
               </select>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3>🎯 各モード設定</h3>
+            <p class="section-description">各モードのアイコンと個別ショートカットを設定できます</p>
+            <div id="modeSettings" class="mode-settings">
+              <!-- モード設定がここに動的に追加される -->
             </div>
           </div>
 

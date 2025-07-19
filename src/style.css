@@ -418,33 +418,80 @@ body {
   color: var(--text-color);
 }
 
-.icon-settings {
+.section-description {
+  font-size: 0.9em;
+  color: var(--text-color);
+  opacity: 0.7;
+  margin-bottom: 15px;
+  line-height: 1.4;
+}
+
+.mode-settings {
   display: grid;
   gap: 15px;
 }
 
-.icon-setting-item {
+.mode-setting-item {
+  background: var(--tile-bg);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+}
+
+.mode-header {
   display: flex;
   align-items: center;
   gap: 15px;
-  padding: 15px;
-  background: var(--tile-bg);
-  border-radius: 10px;
+  margin-bottom: 15px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
 }
 
-.icon-setting-item .mode-info {
+.mode-header .mode-icon-display {
+  font-size: 2.5em;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.mode-header .mode-icon-display:hover {
+  background: var(--tile-hover-bg);
+}
+
+.mode-header .mode-info {
   flex: 1;
 }
 
-.icon-setting-item .mode-info .name {
+.mode-header .mode-info .name {
   font-weight: 600;
   margin-bottom: 5px;
+  font-size: 1.1em;
 }
 
-.icon-setting-item .mode-info .type {
+.mode-header .mode-info .type {
   font-size: 0.9em;
   color: var(--text-color);
   opacity: 0.7;
+}
+
+.mode-controls {
+  display: grid;
+  gap: 12px;
+}
+
+.mode-control-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mode-control-row label {
+  font-weight: 500;
+  min-width: 120px;
+  font-size: 0.95em;
 }
 
 .icon-picker {
@@ -522,6 +569,23 @@ body {
 .shortcut-btn:disabled {
   background: #ccc;
   cursor: not-allowed;
+}
+
+.shortcut-btn-clear {
+  background: #ff4757 !important;
+}
+
+.shortcut-btn-clear:hover {
+  background: #ff3838 !important;
+}
+
+.default-shortcut {
+  font-family: 'Monaco', 'Menlo', monospace;
+  background: var(--tile-bg);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  border: 2px solid var(--border-color);
 }
 
 .shortcut-info {
