@@ -20,7 +20,14 @@
         <h1>🎤 Superwhisper Launcher</h1>
         <div class="controls">
           <span class="shortcuts-hint">Cmd+1-9/0 で直接起動</span>
-          <button class="action-btn" onclick="executeProcessAgain()" title="プロセスアゲイン (Alt+P)" style="-webkit-app-region: no-drag;">🔄</button>
+          <button
+            class="action-btn"
+            onclick="executeProcessAgain()"
+            title="プロセスアゲイン (Alt+P)"
+            style="-webkit-app-region: no-drag"
+          >
+            🔄
+          </button>
           <button class="settings-btn" onclick="openSettings()">⚙️</button>
           <button class="close-btn" onclick="closeApp()">×</button>
         </div>
@@ -48,7 +55,10 @@
 
       <div class="footer">
         <div class="help-text">
-          <span>クリックでモード起動 • ESCで閉じる • Option+Vで再表示 • Alt+Pでプロセスアゲイン</span>
+          <span
+            >クリックでモード起動 • ESCで閉じる • Option+Vで再表示 •
+            Alt+Pでプロセスアゲイン</span
+          >
         </div>
       </div>
     </div>
@@ -116,10 +126,58 @@
           </div>
 
           <div class="settings-section">
-            <h3>🎯 各モード設定</h3>
-            <p class="section-description">各モードのアイコンと個別ショートカットを設定できます</p>
-            <div id="modeSettings" class="mode-settings">
-              <!-- モード設定がここに動的に追加される -->
+            <div
+              class="collapsible-header"
+              onclick="toggleSection('hotkeysSection')"
+            >
+              <h3>⌨️ ホットキー設定</h3>
+              <span class="collapse-arrow">▼</span>
+            </div>
+            <div
+              id="hotkeysSection"
+              class="collapsible-content"
+              style="display: none"
+            >
+              <div class="hotkey-subsection">
+                <div class="number-keys-control-section">
+                  <h4>🔢 数字キー設定</h4>
+                  <div class="shortcut-item number-keys-control">
+                    <label>数字キー（Cmd+1-9/0）を有効化:</label>
+                    <div class="modern-toggle-wrapper">
+                      <button
+                        class="modern-toggle"
+                        id="enableNumberShortcuts"
+                        onclick="toggleNumberShortcuts()"
+                      >
+                        <span class="toggle-icon">🔢</span>
+                        <span class="toggle-text">有効</span>
+                        <span class="toggle-status"></span>
+                      </button>
+                    </div>
+                  </div>
+                  <div id="numberKeySection" style="display: none">
+                    <p class="section-description">
+                      各数字キーにモードを割り当てます
+                    </p>
+                    <div
+                      id="numberKeyAssignments"
+                      class="number-key-assignments"
+                    >
+                      <!-- 数字キー割り当て設定がここに動的に追加される -->
+                    </div>
+                  </div>
+                </div>
+
+                <div class="custom-hotkey-section">
+                  <h4>⌨️ カスタムホットキー</h4>
+                  <p class="section-description">
+                    各モードに個別ショートカットを設定できます
+                  </p>
+                  <div id="modeHotkeyList" class="mode-hotkey-list">
+                    <!-- モードホットキー一覧がここに動的に追加される -->
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

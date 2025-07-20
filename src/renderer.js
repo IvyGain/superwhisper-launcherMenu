@@ -1,7 +1,6 @@
 // DOM要素（DOMContentLoaded後に取得）
 let modesGrid;
 let settingsModal;
-let iconSettings;
 
 // モードデータ
 let currentModes = [];
@@ -284,7 +283,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // DOM要素の取得
   modesGrid = document.getElementById('modesGrid');
   settingsModal = document.getElementById('settingsModal');
-  iconSettings = document.getElementById('iconSettings');
 
   // 検索とフィルター機能の初期化
   initializeSearchAndFilter();
@@ -404,18 +402,35 @@ async function loadSettings() {
     // ショートカット設定の表示
     const launcherInput = document.getElementById('launcherShortcut');
     if (launcherInput && settings.shortcuts) {
-      launcherInput.value = settings.shortcuts.launcher.replace(
-        'CommandOrControl',
-        'Cmd'
-      ).replace('Alt', 'Option');
+      launcherInput.value = settings.shortcuts.launcher
+        .replace('CommandOrControl', 'Cmd')
+        .replace('Alt', 'Option');
     }
 
     const processAgainInput = document.getElementById('processAgainShortcut');
     if (processAgainInput && settings.shortcuts) {
-      processAgainInput.value = (settings.shortcuts.processAgain || '未設定').replace(
-        'CommandOrControl',
-        'Cmd'
-      ).replace('Alt', 'Option');
+      processAgainInput.value = (settings.shortcuts.processAgain || '未設定')
+        .replace('CommandOrControl', 'Cmd')
+        .replace('Alt', 'Option');
+    }
+
+    // 数字キー設定の表示
+    const numberKeysToggle = document.getElementById('enableNumberShortcuts');
+    if (numberKeysToggle && settings.shortcuts) {
+      const isEnabled = settings.shortcuts.enableNumberKeys !== false;
+      if (isEnabled) {
+        numberKeysToggle.classList.add('active');
+        numberKeysToggle.querySelector('.toggle-text').textContent = '有効';
+      } else {
+        numberKeysToggle.classList.remove('active');
+        numberKeysToggle.querySelector('.toggle-text').textContent = '無効';
+      }
+
+      // 数字キー割り当てセクションの表示制御
+      const numberKeySection = document.getElementById('numberKeySection');
+      if (numberKeySection) {
+        numberKeySection.style.display = isEnabled ? 'block' : 'none';
+      }
     }
 
     // テーマ設定の表示
@@ -463,6 +478,13 @@ if (window.electronAPI.onModesUpdate) {
   });
 }
 
+// 設定画面を開くイベントの監視
+if (window.electronAPI.onOpenSettings) {
+  window.electronAPI.onOpenSettings(() => {
+    openSettings();
+  });
+}
+
 // モードの表示
 function renderModes(modes) {
   if (!modesGrid) return;
@@ -483,12 +505,35 @@ function renderModes(modes) {
 
   modesGrid.innerHTML = modes
     .map((mode, index) => {
-      const shortcutKey =
-        index < 9 ? (index + 1).toString() : index === 9 ? '0' : '';
+      // ショートカットキーの表示制御
+      let shortcutDisplay = '';
+      const numberKeysEnabled = settings.shortcuts?.enableNumberKeys !== false;
+      const customShortcut = settings.shortcuts?.modes?.[mode.key];
+
+      if (customShortcut) {
+        // カスタムショートカットがある場合は表示
+        const displayShortcut = customShortcut
+          .replace('CommandOrControl', 'Cmd')
+          .replace('Alt', 'Opt');
+        shortcutDisplay = `<div class="mode-shortcut custom">${displayShortcut}</div>`;
+      } else if (numberKeysEnabled) {
+        // 数字キーが有効な場合のみ数字を表示
+        const numberKeyMappings = settings.shortcuts?.numberKeyMappings || {};
+        const assignedToNumberKey = Object.entries(numberKeyMappings).find(
+          ([, modeKey]) => modeKey === mode.key
+        );
+
+        if (assignedToNumberKey) {
+          shortcutDisplay = `<div class="mode-shortcut">${assignedToNumberKey[0]}</div>`;
+        } else if (index < 10) {
+          const defaultKey = index < 9 ? (index + 1).toString() : '0';
+          shortcutDisplay = `<div class="mode-shortcut">${defaultKey}</div>`;
+        }
+      }
 
       return `
             <div class="mode-tile" data-key="${mode.key}" data-category="${mode.category || ''}" draggable="true">
-                ${shortcutKey ? `<div class="mode-shortcut">${shortcutKey}</div>` : ''}
+                ${shortcutDisplay}
                 <div class="mode-icon">${mode.icon}</div>
                 <div class="mode-name">${escapeHtml(mode.name)}</div>
                 <div class="mode-type">${escapeHtml(mode.type || 'custom')}</div>
@@ -672,7 +717,8 @@ function openSettings() {
     settingsModal = document.getElementById('settingsModal');
   }
   if (settingsModal) {
-    renderModeSettings();
+    renderNumberKeyAssignments();
+    renderModeHotkeyList();
     settingsModal.style.display = 'flex';
   } else {
     console.error('settingsModal not found');
@@ -702,64 +748,143 @@ async function saveSettings() {
   closeSettings();
 }
 
-// モード設定の表示
-function renderModeSettings() {
-  const modeSettings = document.getElementById('modeSettings');
-  if (!modeSettings) return;
+// 数字キー割り当て設定の表示
+function renderNumberKeyAssignments() {
+  const numberKeyAssignments = document.getElementById('numberKeyAssignments');
+  if (!numberKeyAssignments) return;
+
+  const numberKeysEnabled = settings.shortcuts?.enableNumberKeys !== false;
+  const numberKeyMappings = settings.shortcuts?.numberKeyMappings || {};
+
+  const numberKeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+
+  numberKeyAssignments.innerHTML = numberKeys
+    .map((keyNumber) => {
+      const assignedModeKey = numberKeyMappings[keyNumber];
+      const assignedMode = assignedModeKey
+        ? currentModes.find((m) => m.key === assignedModeKey)
+        : null;
+
+      // デフォルトのモード（位置ベース）
+      const defaultIndex = keyNumber === '0' ? 9 : parseInt(keyNumber) - 1;
+      const defaultMode = currentModes[defaultIndex];
+
+      return `
+        <div class="number-key-item ${!numberKeysEnabled ? 'assignment-disabled' : ''}">
+          <div class="number-key-header">
+            <div class="number-key-badge">Cmd+${keyNumber}</div>
+            <div class="number-key-assignment">
+              <select class="mode-selector" onchange="updateNumberKeyAssignment('${keyNumber}', this.value)" ${!numberKeysEnabled ? 'disabled' : ''}>
+                <option value="">デフォルト順序 ${defaultMode ? `(${defaultMode.name})` : '(なし)'}</option>
+                ${currentModes
+                  .map(
+                    (mode) => `
+                  <option value="${mode.key}" ${assignedModeKey === mode.key ? 'selected' : ''}>
+                    ${escapeHtml(mode.name)}
+                  </option>
+                `
+                  )
+                  .join('')}
+              </select>
+            </div>
+          </div>
+          ${
+            assignedMode
+              ? `
+            <div class="current-assignment">
+              <span class="mode-icon">${assignedMode.icon}</span>
+              <span>現在: ${escapeHtml(assignedMode.name)}</span>
+            </div>
+          `
+              : defaultMode
+                ? `
+            <div class="current-assignment">
+              <span class="mode-icon">${defaultMode.icon}</span>
+              <span>デフォルト: ${escapeHtml(defaultMode.name)}</span>
+            </div>
+          `
+                : `
+            <div class="current-assignment">
+              <span>割り当てなし</span>
+            </div>
+          `
+          }
+        </div>
+      `;
+    })
+    .join('');
+}
+
+// モードホットキー一覧の表示
+function renderModeHotkeyList() {
+  const modeHotkeyList = document.getElementById('modeHotkeyList');
+  if (!modeHotkeyList) return;
 
   if (currentModes.length === 0) {
-    modeSettings.innerHTML = '<p>設定可能なモードがありません</p>';
+    modeHotkeyList.innerHTML = '<p>設定可能なモードがありません</p>';
     return;
   }
 
-  modeSettings.innerHTML = currentModes
+  modeHotkeyList.innerHTML = currentModes
     .map((mode, index) => {
-      const defaultShortcutKey =
-        index < 9 ? (index + 1).toString() : index === 9 ? '0' : '';
       const customShortcut = settings.shortcuts?.modes?.[mode.key] || '';
+      const numberKeyMappings = settings.shortcuts?.numberKeyMappings || {};
+      const assignedToNumberKey = Object.entries(numberKeyMappings).find(
+        ([, modeKey]) => modeKey === mode.key
+      );
+      const numberKeysEnabled = settings.shortcuts?.enableNumberKeys !== false;
+
+      // 実際に使用されているショートカットキーを表示
+      let activeShortcut = '';
+      if (customShortcut) {
+        activeShortcut = customShortcut
+          .replace('CommandOrControl', 'Cmd')
+          .replace('Alt', 'Option');
+      } else if (assignedToNumberKey && numberKeysEnabled) {
+        activeShortcut = `Cmd+${assignedToNumberKey[0]}`;
+      } else if (index < 10 && numberKeysEnabled && !assignedToNumberKey) {
+        const defaultKey = index < 9 ? (index + 1).toString() : '0';
+        activeShortcut = `Cmd+${defaultKey}`;
+      }
 
       return `
-            <div class="mode-setting-item">
-                <div class="mode-header">
-                    <button class="mode-icon-display" onclick="showEmojiPicker('${mode.key}', this)">
-                        ${mode.icon}
-                    </button>
-                    <div class="mode-info">
-                        <div class="name">${escapeHtml(mode.name)}</div>
-                        <div class="type">${escapeHtml(mode.type || 'custom')}</div>
-                    </div>
-                </div>
-                <div class="mode-controls">
-                    ${defaultShortcutKey ? `
-                    <div class="mode-control-row">
-                        <label>デフォルト:</label>
-                        <span class="default-shortcut">Cmd+${defaultShortcutKey}</span>
-                    </div>
-                    ` : ''}
-                    <div class="mode-control-row">
-                        <label>カスタム:</label>
-                        <div class="shortcut-input-wrapper">
-                            <input 
-                                type="text" 
-                                id="mode_${mode.key}_shortcut" 
-                                class="shortcut-input" 
-                                value="${customShortcut}"
-                                readonly 
-                                placeholder="未設定"
-                            />
-                            <button class="shortcut-btn" onclick="recordShortcut('mode_${mode.key}')">
-                                ${customShortcut ? '変更' : '設定'}
-                            </button>
-                            ${customShortcut ? `
-                            <button class="shortcut-btn shortcut-btn-clear" onclick="clearModeShortcut('${mode.key}')">
-                                削除
-                            </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                </div>
+        <div class="mode-hotkey-item" onclick="toggleModeHotkeyDetails('${mode.key}')">
+          <div class="mode-basic-info">
+            <span class="mode-icon-small">${mode.icon}</span>
+            <span class="mode-name-small">${escapeHtml(mode.name)}</span>
+          </div>
+          ${activeShortcut ? `<span class="hotkey-indicator">${activeShortcut}</span>` : ''}
+        </div>
+        <div id="details_${mode.key}" class="mode-hotkey-details" style="display: none;">
+          <div class="mode-controls">
+            <div class="mode-control-row">
+              <label>カスタムショートカット:</label>
+              <div class="shortcut-input-wrapper">
+                <input 
+                  type="text" 
+                  id="mode_${mode.key}_shortcut" 
+                  class="shortcut-input" 
+                  value="${customShortcut}"
+                  readonly 
+                  placeholder="未設定"
+                />
+                <button class="shortcut-btn" onclick="recordShortcut('mode_${mode.key}')">
+                  ${customShortcut ? '変更' : '設定'}
+                </button>
+                ${
+                  customShortcut
+                    ? `
+                <button class="shortcut-btn shortcut-btn-clear" onclick="clearModeShortcut('${mode.key}')">
+                  削除
+                </button>
+                `
+                    : ''
+                }
+              </div>
             </div>
-        `;
+          </div>
+        </div>
+      `;
     })
     .join('');
 }
@@ -941,7 +1066,7 @@ window.recordShortcut = function (type) {
     `button[onclick="recordShortcut('${type}')"]`
   );
   let input;
-  
+
   if (type.startsWith('mode_')) {
     input = document.getElementById(`${type}_shortcut`);
   } else {
@@ -1034,16 +1159,16 @@ function updateShortcutDisplay() {
 
   const displayKeys = recordingKeys.map((key) => {
     switch (key) {
-    case 'Meta':
-      return 'Cmd';
-    case 'Control':
-      return 'Ctrl';
-    case 'Alt':
-      return 'Alt';
-    case 'Shift':
-      return 'Shift';
-    default:
-      return key.toUpperCase();
+      case 'Meta':
+        return 'Cmd';
+      case 'Control':
+        return 'Ctrl';
+      case 'Alt':
+        return 'Alt';
+      case 'Shift':
+        return 'Shift';
+      default:
+        return key.toUpperCase();
     }
   });
 
@@ -1059,23 +1184,23 @@ async function finishRecording() {
   const shortcutString = recordingKeys
     .map((key) => {
       switch (key) {
-      case 'Meta':
-        return 'CommandOrControl';
-      case 'Control':
-        return 'CommandOrControl';
-      case 'Alt':
-        return 'Alt';
-      case 'Shift':
-        return 'Shift';
-      default:
-        return key.toUpperCase();
+        case 'Meta':
+          return 'CommandOrControl';
+        case 'Control':
+          return 'CommandOrControl';
+        case 'Alt':
+          return 'Alt';
+        case 'Shift':
+          return 'Shift';
+        default:
+          return key.toUpperCase();
       }
     })
     .join('+');
 
   // 設定を更新
   const shortcuts = settings.shortcuts || {};
-  
+
   if (recordingShortcut.startsWith('mode_')) {
     const modeKey = recordingShortcut.replace('mode_', '');
     if (!shortcuts.modes) shortcuts.modes = {};
@@ -1083,7 +1208,7 @@ async function finishRecording() {
   } else {
     shortcuts[recordingShortcut] = shortcutString;
   }
-  
+
   await window.electronAPI.updateSettings({ shortcuts });
 
   showNotification('ショートカットを更新しました', 'success');
@@ -1147,6 +1272,111 @@ async function executeProcessAgain() {
   }
 }
 
+// 数字キーのトグル
+window.toggleNumberShortcuts = async function () {
+  const toggle = document.getElementById('enableNumberShortcuts');
+  const shortcuts = settings.shortcuts || {};
+  const currentState = shortcuts.enableNumberKeys !== false;
+  const newState = !currentState;
+
+  shortcuts.enableNumberKeys = newState;
+  settings.shortcuts = shortcuts;
+
+  // UI更新
+  if (newState) {
+    toggle.classList.add('active');
+    toggle.querySelector('.toggle-text').textContent = '有効';
+  } else {
+    toggle.classList.remove('active');
+    toggle.querySelector('.toggle-text').textContent = '無効';
+  }
+
+  // 数字キー割り当てセクションの表示制御
+  const numberKeySection = document.getElementById('numberKeySection');
+  if (numberKeySection) {
+    numberKeySection.style.display = newState ? 'block' : 'none';
+  }
+
+  await window.electronAPI.updateSettings({ shortcuts });
+
+  showNotification(
+    newState
+      ? '数字キーショートカットを有効にしました'
+      : '数字キーショートカットを無効にしました',
+    'success'
+  );
+
+  // 数字キー割り当て画面を更新
+  renderNumberKeyAssignments();
+};
+
+// 数字キー割り当ての更新
+window.updateNumberKeyAssignment = async function (keyNumber, modeKey) {
+  const shortcuts = settings.shortcuts || {};
+  if (!shortcuts.numberKeyMappings) {
+    shortcuts.numberKeyMappings = {};
+  }
+
+  if (modeKey === '') {
+    // デフォルトに戻す
+    delete shortcuts.numberKeyMappings[keyNumber];
+  } else {
+    // 新しいモードを割り当て
+    shortcuts.numberKeyMappings[keyNumber] = modeKey;
+  }
+
+  settings.shortcuts = shortcuts;
+  await window.electronAPI.updateSettings({ shortcuts });
+
+  const mode = modeKey ? currentModes.find((m) => m.key === modeKey) : null;
+  const message = mode
+    ? `Cmd+${keyNumber}を「${mode.name}」に割り当てました`
+    : `Cmd+${keyNumber}をデフォルトに戻しました`;
+
+  showNotification(message, 'success');
+
+  // 画面を更新
+  renderNumberKeyAssignments();
+};
+
+// セクションのトグル
+window.toggleSection = function (sectionId) {
+  const section = document.getElementById(sectionId);
+  const header = document.querySelector(
+    `[onclick="toggleSection('${sectionId}')"]`
+  );
+
+  if (section && header) {
+    const isExpanded = section.style.display !== 'none';
+    section.style.display = isExpanded ? 'none' : 'block';
+
+    if (isExpanded) {
+      header.classList.remove('expanded');
+    } else {
+      header.classList.add('expanded');
+    }
+  }
+};
+
+// モードホットキー詳細のトグル
+window.toggleModeHotkeyDetails = function (modeKey) {
+  const details = document.getElementById(`details_${modeKey}`);
+  const item = document.querySelector(
+    `[onclick="toggleModeHotkeyDetails('${modeKey}')"]`
+  );
+
+  if (details && item) {
+    const isExpanded = details.style.display !== 'none';
+    details.style.display = isExpanded ? 'none' : 'block';
+
+    if (isExpanded) {
+      item.classList.remove('expanded');
+    } else {
+      item.classList.add('expanded');
+    }
+  }
+};
+
 // モードショートカットの削除
 window.clearModeShortcut = async function (modeKey) {
   const shortcuts = settings.shortcuts || {};
@@ -1154,7 +1384,7 @@ window.clearModeShortcut = async function (modeKey) {
     delete shortcuts.modes[modeKey];
     await window.electronAPI.updateSettings({ shortcuts });
     showNotification('ショートカットを削除しました', 'success');
-    renderModeSettings(); // 設定画面を更新
+    renderModeHotkeyList(); // 設定画面を更新
   }
 };
 

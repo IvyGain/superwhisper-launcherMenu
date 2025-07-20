@@ -11,6 +11,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('modes-updated', callback);
     return () => ipcRenderer.removeListener('modes-updated', callback);
   },
+  onOpenSettings: (callback) => {
+    ipcRenderer.on('open-settings', callback);
+    return () => ipcRenderer.removeListener('open-settings', callback);
+  },
   showOpenDialog: () => ipcRenderer.invoke('show-open-dialog'),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),

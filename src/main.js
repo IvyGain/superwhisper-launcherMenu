@@ -24,6 +24,7 @@ let modesData = [];
 // アプリケーションの準備完了時
 app.whenReady().then(() => {
   createWindow();
+  createMenuBar();
   createTray();
   setupGlobalShortcuts();
   watchModesFolder();
@@ -65,6 +66,181 @@ function createWindow() {
       mainWindow.hide();
     }
   });
+}
+
+// メニューバーの作成
+function createMenuBar() {
+  const template = [
+    {
+      label: 'Superwhisper Launcher',
+      submenu: [
+        {
+          label: 'Superwhisper Launcherについて',
+          click: () => {
+            const { dialog } = require('electron');
+            dialog.showMessageBox(mainWindow, {
+              type: 'info',
+              title: 'Superwhisper Launcherについて',
+              message: 'Superwhisper Launcher',
+              detail: `バージョン: ${app.getVersion()}\n\nSuperwhisperのモードを簡単に起動するためのランチャーアプリケーションです。`,
+              buttons: ['OK'],
+            });
+          },
+        },
+        { type: 'separator' },
+        {
+          label: '設定...',
+          accelerator: 'CmdOrCtrl+,',
+          click: () => {
+            openSettings();
+          },
+        },
+        { type: 'separator' },
+        {
+          label: '終了',
+          accelerator: 'CmdOrCtrl+Q',
+          click: () => {
+            app.quit();
+          },
+        },
+      ],
+    },
+    {
+      label: '表示',
+      submenu: [
+        {
+          label: 'ランチャーを表示',
+          accelerator: 'Alt+V',
+          click: () => {
+            showWindow();
+          },
+        },
+        {
+          label: 'モードを再読み込み',
+          accelerator: 'CmdOrCtrl+R',
+          click: () => {
+            loadModes();
+            if (mainWindow) {
+              mainWindow.webContents.send('modes-updated', modesData);
+            }
+          },
+        },
+      ],
+    },
+    {
+      label: 'ウィンドウ',
+      submenu: [
+        {
+          label: '最小化',
+          accelerator: 'CmdOrCtrl+M',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.minimize();
+            }
+          },
+        },
+        {
+          label: '閉じる',
+          accelerator: 'CmdOrCtrl+W',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.hide();
+            }
+          },
+        },
+      ],
+    },
+    {
+      label: 'ヘルプ',
+      submenu: [
+        {
+          label: 'GitHubリポジトリ',
+          click: () => {
+            shell.openExternal(
+              'https://github.com/mashimaro/SuperwhisperLauncher'
+            );
+          },
+        },
+        {
+          label: 'Superwhisper公式サイト',
+          click: () => {
+            shell.openExternal('https://superwhisper.com');
+          },
+        },
+      ],
+    },
+  ];
+
+  // macOS固有のメニュー調整
+  if (process.platform === 'darwin') {
+    // macOS特有のメニューアイテムを追加
+    template[0].submenu.splice(
+      2,
+      0,
+      {
+        label: 'サービス',
+        role: 'services',
+        submenu: [],
+      },
+      { type: 'separator' },
+      {
+        label: 'Superwhisper Launcherを隠す',
+        accelerator: 'CmdOrCtrl+H',
+        role: 'hide',
+      },
+      {
+        label: 'その他を隠す',
+        accelerator: 'CmdOrCtrl+Shift+H',
+        role: 'hideothers',
+      },
+      {
+        label: 'すべてを表示',
+        role: 'unhide',
+      }
+    );
+
+    // ウィンドウメニューに追加の項目
+    template[2].submenu.push(
+      { type: 'separator' },
+      {
+        label: 'すべてを前面に移動',
+        role: 'front',
+      }
+    );
+  }
+
+  // 開発モード用メニュー
+  if (
+    process.env.NODE_ENV === 'development' ||
+    process.argv.includes('--dev')
+  ) {
+    template.push({
+      label: '開発',
+      submenu: [
+        {
+          label: '開発者ツール',
+          accelerator: 'CmdOrCtrl+Alt+I',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.webContents.openDevTools();
+            }
+          },
+        },
+        {
+          label: 'リロード',
+          accelerator: 'CmdOrCtrl+Shift+R',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.reload();
+            }
+          },
+        },
+      ],
+    });
+  }
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
 }
 
 // システムトレイの作成
@@ -154,6 +330,7 @@ function setupGlobalShortcuts() {
     const shortcuts = store.get('shortcuts', {
       launcher: 'Alt+V',
       processAgain: 'Alt+P',
+      enableNumberKeys: true,
     });
 
     // メインランチャーのショートカット
@@ -168,15 +345,36 @@ function setupGlobalShortcuts() {
       });
     }
 
-    // 数字キー1-9, 0でモード直接起動（デフォルト）
-    for (let i = 1; i <= 9; i++) {
-      globalShortcut.register(`CommandOrControl+${i}`, () => {
-        launchModeByIndex(i - 1);
+    // 数字キー1-9, 0でモード直接起動（オンオフ可能・個別割り当て対応）
+    if (shortcuts.enableNumberKeys !== false) {
+      // 個別割り当てがある場合はそれを使用、なければデフォルトの順序
+      const numberKeyMappings = shortcuts.numberKeyMappings || {};
+
+      for (let i = 1; i <= 9; i++) {
+        const keyNumber = i.toString();
+        const assignedModeKey = numberKeyMappings[keyNumber];
+
+        globalShortcut.register(`CommandOrControl+${i}`, () => {
+          if (assignedModeKey) {
+            // 個別割り当てがある場合
+            launchMode(assignedModeKey);
+          } else {
+            // デフォルトの順序（位置ベース）
+            launchModeByIndex(i - 1);
+          }
+        });
+      }
+
+      // 0キーの処理
+      const assignedModeKey0 = numberKeyMappings['0'];
+      globalShortcut.register('CommandOrControl+0', () => {
+        if (assignedModeKey0) {
+          launchMode(assignedModeKey0);
+        } else {
+          launchModeByIndex(9);
+        }
       });
     }
-    globalShortcut.register('CommandOrControl+0', () => {
-      launchModeByIndex(9);
-    });
 
     // 個別モードのカスタムショートカット
     if (shortcuts.modes) {
@@ -187,7 +385,10 @@ function setupGlobalShortcuts() {
               launchMode(modeKey);
             });
           } catch (error) {
-            console.error(`モード ${modeKey} のショートカット登録エラー:`, error);
+            console.error(
+              `モード ${modeKey} のショートカット登録エラー:`,
+              error
+            );
           }
         }
       });
@@ -376,33 +577,116 @@ function launchModeByIndex(index) {
 // プロセスアゲインの実行
 function executeProcessAgain() {
   try {
-    // AppleScriptを使用してSuperwhisperのHistoryを開き、最新の項目を再処理
+    // 公式ドキュメントに基づく確実なアプローチ：Menu Bar → History → Right-click → Process Again
     const script = `
       tell application "System Events"
         try
-          tell application "Superwhisper" to activate
+          -- Superwhisperを起動して最前面に
+          tell application "superwhisper" to activate
           delay 0.5
-          keystroke "h" using {command down}
-          delay 1
-          key code 125
-          delay 0.2
-          keystroke return using {control down}
-          delay 0.5
-          click menu item "Process Again" of menu 1 of application process "Superwhisper"
+          
+          -- Menu Bar の History メニューを開く
+          tell application process "superwhisper"
+            click menu item "History..." of menu 1 of menu bar item "superwhisper" of menu bar 1
+            delay 1.0
+            
+            -- Historyウィンドウが開いたかチェック
+            set windowCount to count of windows
+            if windowCount > 0 then
+              tell window 1
+                -- 最新の録音（通常はリストの最初）にフォーカス
+                set focused to true
+                delay 0.3
+                
+                -- リスト内の最初のアイテムを確実に選択
+                key code 126 -- Up arrow (to top)
+                delay 0.2
+                key code 125 -- Down arrow (first item)
+                delay 0.3
+                
+                -- 右クリックでコンテキストメニューを開く
+                key code 49 using {control down} -- Control+Space (right-click equivalent)
+                delay 0.5
+                
+                -- Process Again を探してクリック
+                try
+                  click menu item "Process Again" of menu 1
+                on error
+                  -- "Process Again" が見つからない場合の代替案
+                  -- メニューの全項目をチェック
+                  set menuItems to name of every menu item of menu 1
+                  repeat with itemName in menuItems
+                    if itemName contains "Process" or itemName contains "Again" or itemName contains "再処理" then
+                      click menu item itemName of menu 1
+                      exit repeat
+                    end if
+                  end repeat
+                end try
+                
+              end tell
+            else
+              error "Historyウィンドウが開きませんでした"
+            end if
+          end tell
+          
+          -- 成功通知
+          display notification "プロセスアゲインを実行しました" with title "Superwhisper Launcher"
+          
         on error errorMessage
-          display notification "プロセスアゲインの実行に失敗しました" with title "Superwhisper Launcher"
+          -- エラー時のフォールバック処理
+          display notification "プロセスアゲインの自動実行に失敗しました。Historyを手動で開きます。" with title "Superwhisper Launcher"
+          
+          -- Historyメニューを開いてユーザーに委ねる
+          try
+            tell application process "superwhisper"
+              click menu item "History..." of menu 1 of menu bar item "superwhisper" of menu bar 1
+            end tell
+          end try
         end try
       end tell
     `;
-    require('child_process').exec(`osascript -e '${script}'`, (error, stdout, stderr) => {
+
+    require('child_process').exec(`osascript -e '${script}'`, (error) => {
       if (error) {
         console.error('プロセスアゲイン実行エラー:', error);
+        // 最終フォールバック
+        fallbackProcessAgain();
       } else {
-        console.log('プロセスアゲインを実行しました');
+        console.log('プロセスアゲインスクリプトを実行しました');
       }
     });
   } catch (error) {
     console.error('プロセスアゲイン実行エラー:', error);
+    fallbackProcessAgain();
+  }
+}
+
+// フォールバック方法：Historyメニューを開いてユーザーガイド表示
+function fallbackProcessAgain() {
+  try {
+    // まずSuperwhisperを起動
+    shell.openExternal('superwhisper://mode');
+
+    setTimeout(() => {
+      // Historyメニューを開く
+      const openHistoryScript = `
+        tell application "System Events"
+          try
+            tell application "superwhisper" to activate
+            delay 0.5
+            tell application process "superwhisper"
+              click menu item "History..." of menu 1 of menu bar item "superwhisper" of menu bar 1
+            end tell
+            display notification "録音を右クリックして「Process Again」を選択してください" with title "Superwhisper Launcher" subtitle "手動操作が必要です"
+          on error
+            display notification "Superwhisperが見つかりません" with title "Superwhisper Launcher"
+          end try
+        end tell
+      `;
+      require('child_process').exec(`osascript -e '${openHistoryScript}'`);
+    }, 1000);
+  } catch (error) {
+    console.error('フォールバック実行エラー:', error);
   }
 }
 
@@ -430,7 +714,14 @@ function launchMode(modeKey) {
 
 // 設定画面を開く
 function openSettings() {
-  console.log('設定画面 - 実装予定');
+  if (mainWindow) {
+    // ウィンドウを表示
+    mainWindow.show();
+    mainWindow.focus();
+
+    // レンダラープロセスに設定画面を開くように通知
+    mainWindow.webContents.send('open-settings');
+  }
 }
 
 // IPCイベントハンドラ - handle を使用してセキュアに
@@ -463,7 +754,11 @@ ipcMain.handle('update-settings', async (event, settings) => {
 
 ipcMain.handle('get-settings', async () => {
   return {
-    shortcuts: store.get('shortcuts', { launcher: 'Alt+V', processAgain: 'Alt+P' }),
+    shortcuts: store.get('shortcuts', {
+      launcher: 'Alt+V',
+      processAgain: 'Alt+P',
+      enableNumberKeys: true,
+    }),
     theme: store.get('theme', 'system'),
     modesOrder: store.get('modesOrder', []),
     icons: store.get('icons', {}),

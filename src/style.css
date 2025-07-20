@@ -298,6 +298,13 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+.mode-shortcut.custom {
+  background: var(--primary-color);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  font-size: 0.6em;
+  padding: 3px 6px;
+}
+
 .loading {
   grid-column: 1 / -1;
   display: flex;
@@ -588,6 +595,14 @@ body {
   border: 2px solid var(--border-color);
 }
 
+.default-shortcut.disabled {
+  opacity: 0.5;
+  background: var(--background-color);
+  border-color: var(--border-color);
+  color: var(--text-color);
+  text-decoration: line-through;
+}
+
 .shortcut-info {
   background: var(--tile-bg);
   padding: 15px;
@@ -605,6 +620,271 @@ body {
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 0.9em;
+}
+
+.number-shortcuts-note {
+  font-size: 0.85em !important;
+  opacity: 0.8;
+  margin-top: 8px;
+}
+
+/* モダンなトグルボタン */
+.modern-toggle-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.modern-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--background-color);
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+  justify-content: space-between;
+}
+
+.modern-toggle:hover {
+  border-color: var(--primary-color);
+  background: var(--tile-hover-bg);
+}
+
+.modern-toggle.active {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+  color: white;
+}
+
+.toggle-icon {
+  font-size: 1.2em;
+}
+
+.toggle-text {
+  font-weight: 500;
+  font-size: 0.9em;
+}
+
+.toggle-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ccc;
+  transition: background 0.3s ease;
+}
+
+.modern-toggle.active .toggle-status {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.number-keys-control {
+  align-items: center;
+}
+
+.number-keys-control label {
+  min-width: 180px;
+}
+
+/* 数字キー割り当て */
+.number-key-assignments {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 15px;
+}
+
+.number-key-item {
+  background: var(--tile-bg);
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+}
+
+.number-key-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.number-key-badge {
+  background: var(--primary-color);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-weight: 600;
+  font-size: 0.9em;
+  min-width: 80px;
+  text-align: center;
+}
+
+.number-key-assignment {
+  flex: 1;
+}
+
+.mode-selector {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 14px;
+  background: var(--background-color);
+  color: var(--text-color);
+}
+
+.mode-selector:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.current-assignment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 0.9em;
+  opacity: 0.8;
+}
+
+.current-assignment .mode-icon {
+  font-size: 1.2em;
+}
+
+.assignment-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.assignment-disabled .number-key-badge {
+  background: #ccc;
+}
+
+/* 折りたたみ可能なセクション */
+.collapsible-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.collapsible-header:hover {
+  background: var(--tile-hover-bg);
+  margin: 0 -20px;
+  padding-left: 20px;
+  padding-right: 20px;
+  border-radius: 8px;
+}
+
+.collapse-arrow {
+  font-size: 0.8em;
+  transition: transform 0.3s ease;
+  color: var(--primary-color);
+}
+
+.collapsible-header.expanded .collapse-arrow {
+  transform: rotate(180deg);
+}
+
+.collapsible-content {
+  padding-top: 15px;
+}
+
+.hotkey-subsection {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.number-keys-control-section,
+.custom-hotkey-section {
+  background: var(--tile-bg);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.number-keys-control-section h4,
+.custom-hotkey-section h4 {
+  margin: 0 0 15px 0;
+  font-size: 1.1em;
+  color: var(--text-color);
+}
+
+.number-keys-control-section .shortcut-item {
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.number-keys-control-section .section-description {
+  margin-bottom: 15px;
+}
+
+/* モードホットキー一覧 */
+.mode-hotkey-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mode-hotkey-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--tile-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mode-hotkey-item:hover {
+  background: var(--tile-hover-bg);
+  border-color: var(--primary-color);
+}
+
+.mode-hotkey-item.expanded {
+  border-color: var(--primary-color);
+}
+
+.mode-basic-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.mode-icon-small {
+  font-size: 1.5em;
+}
+
+.mode-name-small {
+  font-weight: 500;
+  font-size: 0.95em;
+}
+
+.hotkey-indicator {
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.8em;
+  padding: 4px 8px;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 4px;
+  opacity: 0.8;
+}
+
+.mode-hotkey-details {
+  padding: 15px 0 5px 0;
+  border-top: 1px solid var(--border-color);
+  margin-top: 12px;
 }
 
 /* テーマ設定 */
