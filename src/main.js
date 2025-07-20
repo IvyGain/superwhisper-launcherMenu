@@ -89,6 +89,13 @@ function createMenuBar() {
         },
         { type: 'separator' },
         {
+          label: 'ランチャーを表示',
+          accelerator: 'Alt+V',
+          click: () => {
+            showWindow();
+          },
+        },
+        {
           label: '設定...',
           accelerator: 'CmdOrCtrl+,',
           click: () => {
@@ -115,6 +122,15 @@ function createMenuBar() {
             showWindow();
           },
         },
+        { type: 'separator' },
+        {
+          label: 'プロセスアゲイン',
+          accelerator: 'Alt+P',
+          click: () => {
+            executeProcessAgain();
+          },
+        },
+        { type: 'separator' },
         {
           label: 'モードを再読み込み',
           accelerator: 'CmdOrCtrl+R',
@@ -174,8 +190,10 @@ function createMenuBar() {
   // macOS固有のメニュー調整
   if (process.platform === 'darwin') {
     // macOS特有のメニューアイテムを追加
+    // 現在の構造: About, separator, ランチャーを表示, 設定, separator, 終了
+    // "設定"の後（インデックス4）にmacOS固有項目を挿入
     template[0].submenu.splice(
-      2,
+      4,
       0,
       {
         label: 'サービス',
@@ -241,6 +259,18 @@ function createMenuBar() {
 
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
+  
+  // デバッグ用：メニューが作成されたことをログ出力
+  console.log('メニューバーが作成されました。以下の項目が含まれています:');
+  console.log('- Superwhisper Launcher');
+  console.log('  - Superwhisper Launcherについて');
+  console.log('  - ランチャーを表示 (Alt+V)');
+  console.log('  - 設定... (Cmd+,)');
+  console.log('  - 終了 (Cmd+Q)');
+  console.log('- 表示');
+  console.log('  - ランチャーを表示 (Alt+V)');
+  console.log('  - プロセスアゲイン (Alt+P)');
+  console.log('  - モードを再読み込み (Cmd+R)');
 }
 
 // システムトレイの作成

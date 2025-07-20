@@ -22,14 +22,14 @@
           <span class="shortcuts-hint">Cmd+1-9/0 で直接起動</span>
           <button
             class="action-btn"
-            onclick="executeProcessAgain()"
+            id="processAgainBtn"
             title="プロセスアゲイン (Alt+P)"
             style="-webkit-app-region: no-drag"
           >
             🔄
           </button>
-          <button class="settings-btn" onclick="openSettings()">⚙️</button>
-          <button class="close-btn" onclick="closeApp()">×</button>
+          <button class="settings-btn" id="settingsBtn">⚙️</button>
+          <button class="close-btn" id="closeBtn">×</button>
         </div>
       </div>
 
@@ -68,7 +68,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h2>設定</h2>
-          <button class="close-btn" onclick="closeSettings()">×</button>
+          <button class="close-btn" id="modalCloseBtn">×</button>
         </div>
         <div class="modal-body">
           <div class="settings-section">
@@ -85,7 +85,8 @@
                   />
                   <button
                     class="shortcut-btn"
-                    onclick="recordShortcut('launcher')"
+                    id="launcherShortcutBtn"
+                    data-shortcut-type="launcher"
                   >
                     変更
                   </button>
@@ -102,7 +103,8 @@
                   />
                   <button
                     class="shortcut-btn"
-                    onclick="recordShortcut('processAgain')"
+                    id="processAgainShortcutBtn"
+                    data-shortcut-type="processAgain"
                   >
                     変更
                   </button>
@@ -128,7 +130,8 @@
           <div class="settings-section">
             <div
               class="collapsible-header"
-              onclick="toggleSection('hotkeysSection')"
+              id="hotkeysToggle"
+              data-target="hotkeysSection"
             >
               <h3>⌨️ ホットキー設定</h3>
               <span class="collapse-arrow">▼</span>
@@ -147,7 +150,6 @@
                       <button
                         class="modern-toggle"
                         id="enableNumberShortcuts"
-                        onclick="toggleNumberShortcuts()"
                       >
                         <span class="toggle-icon">🔢</span>
                         <span class="toggle-text">有効</span>
@@ -182,10 +184,10 @@
           </div>
 
           <div class="modal-footer">
-            <button class="button button-primary" onclick="saveSettings()">
+            <button class="button button-primary" id="saveSettingsBtn">
               保存
             </button>
-            <button class="button button-secondary" onclick="closeSettings()">
+            <button class="button button-secondary" id="cancelSettingsBtn">
               キャンセル
             </button>
           </div>

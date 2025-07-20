@@ -392,6 +392,53 @@ function setupEventListeners() {
       closeSettings();
     }
   });
+
+  // ボタンのイベントリスナー
+  const settingsBtn = document.getElementById('settingsBtn');
+  const closeBtn = document.getElementById('closeBtn');
+  const processAgainBtn = document.getElementById('processAgainBtn');
+  const modalCloseBtn = document.getElementById('modalCloseBtn');
+  const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+  const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
+
+  settingsBtn?.addEventListener('click', openSettings);
+  closeBtn?.addEventListener('click', closeApp);
+  processAgainBtn?.addEventListener('click', executeProcessAgain);
+  modalCloseBtn?.addEventListener('click', closeSettings);
+  saveSettingsBtn?.addEventListener('click', saveSettings);
+  cancelSettingsBtn?.addEventListener('click', closeSettings);
+
+  // 折りたたみセクションのイベントリスナー
+  const hotkeysToggle = document.getElementById('hotkeysToggle');
+  hotkeysToggle?.addEventListener('click', () => {
+    console.log('ホットキーセクションのトグルがクリックされました');
+    const target = hotkeysToggle.getAttribute('data-target');
+    console.log('ターゲット:', target);
+    if (target) {
+      toggleSection(target);
+    }
+  });
+
+  // ショートカット設定ボタンのイベントリスナー
+  const launcherShortcutBtn = document.getElementById('launcherShortcutBtn');
+  const processAgainShortcutBtn = document.getElementById('processAgainShortcutBtn');
+  const enableNumberShortcuts = document.getElementById('enableNumberShortcuts');
+
+  launcherShortcutBtn?.addEventListener('click', () => {
+    const type = launcherShortcutBtn.getAttribute('data-shortcut-type');
+    if (type) {
+      recordShortcut(type);
+    }
+  });
+
+  processAgainShortcutBtn?.addEventListener('click', () => {
+    const type = processAgainShortcutBtn.getAttribute('data-shortcut-type');
+    if (type) {
+      recordShortcut(type);
+    }
+  });
+
+  enableNumberShortcuts?.addEventListener('click', toggleNumberShortcuts);
 }
 
 // 設定の読み込み
@@ -1341,20 +1388,29 @@ window.updateNumberKeyAssignment = async function (keyNumber, modeKey) {
 
 // セクションのトグル
 window.toggleSection = function (sectionId) {
+  console.log('toggleSection呼び出し:', sectionId);
   const section = document.getElementById(sectionId);
   const header = document.querySelector(
-    `[onclick="toggleSection('${sectionId}')"]`
+    `[data-target="${sectionId}"]`
   );
+  
+  console.log('セクション要素:', section);
+  console.log('ヘッダー要素:', header);
 
   if (section && header) {
     const isExpanded = section.style.display !== 'none';
+    console.log('現在の表示状態:', isExpanded ? '表示' : '非表示');
+    
     section.style.display = isExpanded ? 'none' : 'block';
+    console.log('新しい表示状態:', isExpanded ? '非表示' : '表示');
 
     if (isExpanded) {
       header.classList.remove('expanded');
     } else {
       header.classList.add('expanded');
     }
+  } else {
+    console.log('要素が見つかりません - section:', !!section, 'header:', !!header);
   }
 };
 
@@ -1388,9 +1444,3 @@ window.clearModeShortcut = async function (modeKey) {
   }
 };
 
-// window関数をグローバルに公開
-window.openSettings = openSettings;
-window.closeSettings = closeSettings;
-window.saveSettings = saveSettings;
-window.closeApp = closeApp;
-window.executeProcessAgain = executeProcessAgain;
