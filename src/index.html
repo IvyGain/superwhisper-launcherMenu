@@ -40,17 +40,43 @@
             </div>
             <div class="modal-body">
                 <div class="settings-section">
-                    <h3>アイコン設定</h3>
-                    <div id="iconSettings" class="icon-settings">
-                        <!-- アイコン設定がここに動的に追加される -->
+                    <h3>⌨️ ショートカット設定</h3>
+                    <div class="shortcut-settings">
+                        <div class="shortcut-item">
+                            <label>ランチャーを開く:</label>
+                            <div class="shortcut-input-group">
+                                <input type="text" class="shortcut-input" value="Option+V" readonly>
+                                <button class="shortcut-change-btn">変更</button>
+                            </div>
+                        </div>
+                        <div class="shortcut-item">
+                            <label>プロセスログイン:</label>
+                            <div class="shortcut-input-group">
+                                <input type="text" class="shortcut-input" value="Option+P" readonly>
+                                <button class="shortcut-change-btn">変更</button>
+                            </div>
+                        </div>
+                        <div class="shortcut-fixed">
+                            <span class="key-badge">ESC</span> - ランチャーを閉じる
+                        </div>
                     </div>
                 </div>
                 <div class="settings-section">
-                    <h3>ショートカット</h3>
-                    <div class="shortcut-info">
-                        <p><strong>Cmd+Shift+W</strong> - ランチャーを開く</p>
-                        <p><strong>Cmd+1-9/0</strong> - モード直接起動</p>
-                        <p><strong>ESC</strong> - ランチャーを閉じる</p>
+                    <h3>🎨 テーマ設定</h3>
+                    <div class="theme-settings">
+                        <select class="theme-select">
+                            <option value="dark" selected>ダーク</option>
+                            <option value="light">ライト</option>
+                            <option value="auto">システム</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="settings-section collapsible">
+                    <h3 class="collapsible-header">⌨️ ホットキー設定 <span class="collapse-arrow">▼</span></h3>
+                    <div class="collapsible-content">
+                        <div id="iconSettings" class="icon-settings">
+                            <!-- アイコン設定がここに動的に追加される -->
+                        </div>
                     </div>
                 </div>
             </div>
