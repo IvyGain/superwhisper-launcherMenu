@@ -1,18 +1,19 @@
 :root {
-  /* カラーパレット - Superwhisperダークテーマ */
-  --color-primary: #007bff;
-  --color-success: #28a745;
-  --color-error: #dc3545;
-  --color-warning: #ffc107;
+  /* カラーパレット - Superwhisperダークテーマ完全コピー */
+  --color-primary: #0a84ff;
+  --color-success: #30d158;
+  --color-error: #ff453a;
+  --color-warning: #ffd60a;
   --color-text-primary: #ffffff;
   --color-text-secondary: #8e8e93;
-  --color-text-muted: #48484a;
-  --color-background: rgba(0, 0, 0, 0.95);
+  --color-text-muted: #636366;
+  --color-background: #000000;
   --color-surface: #1c1c1e;
   --color-surface-secondary: #2c2c2e;
   --color-surface-hover: #3a3a3c;
-  --color-border: rgba(255, 255, 255, 0.1);
-  --color-border-secondary: rgba(255, 255, 255, 0.05);
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-secondary: rgba(255, 255, 255, 0.04);
+  --color-selection: rgba(94, 92, 230, 0.4);
   
   /* スペーシング */
   --spacing-xs: 5px;
@@ -83,7 +84,7 @@ body {
   width: 100vw;
   height: 100vh;
   margin: 0;
-  padding: var(--container-padding);
+  padding: 0;
   background: var(--color-surface);
   border-radius: var(--radius-lg);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
@@ -98,8 +99,10 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-xxl);
-  min-height: var(--header-height);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  min-height: 60px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .header h1 {
@@ -139,17 +142,17 @@ body {
   background: none;
   border: none;
   cursor: pointer;
-  padding: var(--spacing-sm);
-  border-radius: var(--radius-md);
-  transition: all var(--transition-fast);
-  font-size: 1.2em;
-  opacity: 0.7;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  font-size: 18px;
+  opacity: 0.6;
 }
 
 .settings-btn:hover,
 .close-btn:hover {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .close-btn {
@@ -159,91 +162,104 @@ body {
 /* モードグリッド */
 .modes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--tile-min-size), 1fr));
-  gap: var(--grid-gap);
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
   flex: 1;
   overflow-y: auto;
-  padding: var(--spacing-sm) 0;
-  max-height: none;
+  overflow-x: hidden;
+  padding: var(--spacing-lg) var(--spacing-xl);
+  padding-bottom: var(--spacing-xl);
+  grid-auto-rows: 110px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* モードタイル */
 .mode-tile {
-  aspect-ratio: 1/1;
   background: var(--color-surface-secondary);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-md);
+  border-radius: 12px;
+  padding: 12px;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.15s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  border: 1px solid var(--color-border);
+  border: 1px solid transparent;
   position: relative;
-  min-height: var(--tile-min-size);
+  height: 100%;
+  overflow: hidden;
 }
 
 .mode-tile:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-  border-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.02);
   background: var(--color-surface-hover);
+  border-color: var(--color-border);
 }
 
 .mode-tile.active {
-  animation: pulse var(--transition-fast);
-  background: rgba(0, 123, 255, 0.2);
+  animation: pulse 0.2s ease;
+  background: var(--color-selection);
   border-color: var(--color-primary);
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  0% { 
+    transform: scale(1);
+    background: var(--color-surface-secondary);
+  }
+  50% { 
+    transform: scale(1.03);
+    background: var(--color-selection);
+  }
+  100% { 
+    transform: scale(1);
+    background: var(--color-selection);
+  }
 }
 
 /* モードタイル内の要素 */
 .mode-icon {
-  font-size: 2.2em;
-  margin-bottom: var(--spacing-sm);
-  opacity: 0.9;
+  font-size: 32px;
+  margin-bottom: 8px;
+  line-height: 1;
 }
 
 .mode-name {
-  font-size: 0.85em;
-  font-weight: var(--font-weight-normal);
+  font-size: 13px;
+  font-weight: 400;
   color: var(--color-text-primary);
-  margin-bottom: var(--spacing-xs);
-  line-height: 1.2;
+  margin-top: 4px;
+  line-height: 1.3;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  opacity: 0.95;
+  word-break: break-word;
 }
 
 .mode-type {
-  font-size: 0.65em;
-  color: var(--color-text-secondary);
+  font-size: 11px;
+  color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  opacity: 0.7;
+  letter-spacing: 0.3px;
+  margin-top: 2px;
 }
 
 .mode-shortcut {
   position: absolute;
-  top: var(--spacing-sm);
-  left: var(--spacing-sm);
-  background: rgba(142, 142, 147, 0.2);
+  top: 8px;
+  left: 8px;
+  background: rgba(255, 255, 255, 0.08);
   color: var(--color-text-secondary);
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 0.7em;
-  font-weight: var(--font-weight-medium);
-  font-family: var(--font-family-mono);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: -apple-system-mono, monospace;
+  line-height: 1.2;
 }
 
 /* 状態表示 */
@@ -297,10 +313,10 @@ body {
 /* フッター */
 .footer {
   text-align: center;
-  margin-top: var(--spacing-lg);
-  padding-top: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-xl);
   border-top: 1px solid var(--color-border);
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
 }
 
 .help-text {
@@ -479,44 +495,80 @@ body {
 }
 
 /* レスポンシブ対応 */
-@media (max-width: 768px) {
-  :root {
-    --tile-min-size: 100px;
-    --container-padding: var(--spacing-md);
-    --grid-gap: var(--spacing-sm);
-  }
-  
+@media (min-width: 1200px) {
   .modes-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  
-  .mode-tile {
-    padding: var(--spacing-md);
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 16px;
+    grid-auto-rows: 120px;
   }
   
   .mode-icon {
-    font-size: 2.5em;
+    font-size: 36px;
   }
   
   .mode-name {
-    font-size: var(--font-size-md);
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  .modes-grid {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 10px;
+    padding: var(--spacing-md);
+    grid-auto-rows: 90px;
+  }
+  
+  .mode-tile {
+    padding: 10px;
+  }
+  
+  .mode-icon {
+    font-size: 28px;
+  }
+  
+  .mode-name {
+    font-size: 12px;
+  }
+  
+  .mode-shortcut {
+    font-size: 10px;
+    padding: 1px 4px;
   }
 }
 
 @media (max-width: 600px) {
-  .container {
-    padding: var(--spacing-md);
+  .modes-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    padding: var(--spacing-sm);
+    grid-auto-rows: 80px;
   }
   
-  .modes-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-md);
+  .mode-tile {
+    padding: 8px;
+  }
+  
+  .mode-icon {
+    font-size: 24px;
+    margin-bottom: 4px;
+  }
+  
+  .mode-name {
+    font-size: 11px;
+    -webkit-line-clamp: 1;
+  }
+  
+  .mode-type {
+    display: none;
   }
   
   .header {
-    flex-direction: column;
-    gap: var(--spacing-sm);
-    min-height: auto;
+    padding: var(--spacing-md);
+  }
+  
+  .header h1 {
+    font-size: 1.1em;
   }
   
   .shortcuts-hint {
