@@ -23,6 +23,8 @@ class SuperwhisperLauncher {
       this.setupGlobalShortcuts();
       this.watchModesFolder();
       this.loadModes();
+      // アプリ起動時にウィンドウを表示
+      this.showWindow();
     });
     
     this.setupAppEventHandlers();
