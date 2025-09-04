@@ -31,7 +31,8 @@
     ],
     "mac": {
       "category": "public.app-category.productivity",
-      "target": "dmg"
+      "target": "dmg",
+      "icon": "assets/icon.png"
     }
   }
 }
