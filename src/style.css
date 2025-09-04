@@ -7,10 +7,10 @@
   --color-text-primary: #ffffff;
   --color-text-secondary: #8e8e93;
   --color-text-muted: #636366;
-  --color-background: #000000;
-  --color-surface: #1c1c1e;
-  --color-surface-secondary: #2c2c2e;
-  --color-surface-hover: #3a3a3c;
+  --color-background: radial-gradient(ellipse at center, #1a1a1c 0%, #000000 100%);
+  --color-surface: linear-gradient(145deg, #1c1c1e 0%, #161618 100%);
+  --color-surface-secondary: linear-gradient(145deg, #2c2c2e 0%, #25252a 100%);
+  --color-surface-hover: linear-gradient(145deg, #3a3a3c 0%, #323238 100%);
   --color-border: rgba(255, 255, 255, 0.08);
   --color-border-secondary: rgba(255, 255, 255, 0.04);
   --color-selection: rgba(94, 92, 230, 0.4);
@@ -87,7 +87,7 @@ body {
   padding: 0;
   background: var(--color-surface);
   border-radius: var(--radius-lg);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(20px);
   display: flex;
   flex-direction: column;
@@ -103,6 +103,7 @@ body {
   min-height: 60px;
   flex-shrink: 0;
   border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.02), transparent);
 }
 
 .header h1 {
@@ -190,12 +191,14 @@ body {
   position: relative;
   height: 100%;
   overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .mode-tile:hover {
   transform: scale(1.02);
   background: var(--color-surface-hover);
   border-color: var(--color-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 4px 8px rgba(0, 0, 0, 0.4);
 }
 
 .mode-tile.active {
@@ -315,8 +318,9 @@ body {
   text-align: center;
   padding: var(--spacing-md) var(--spacing-xl);
   border-top: 1px solid var(--color-border);
-  background: rgba(0, 0, 0, 0.3);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.4));
   flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
 .help-text {
@@ -347,7 +351,7 @@ body {
   width: 90%;
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.03);
   border: 1px solid var(--color-border);
 }
 
