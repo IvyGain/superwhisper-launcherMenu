@@ -137,7 +137,14 @@ class SuperwhisperLauncherRenderer {
       const shortcutKey = index < 9 ? (index + 1).toString() : index === 9 ? '0' : '';
       
       return `
-        <div class="mode-tile" onclick="launcherRenderer.launchMode('${mode.key}')" data-key="${mode.key}">
+        <div class="mode-tile" 
+             onclick="launcherRenderer.launchMode('${mode.key}')" 
+             data-key="${mode.key}"
+             draggable="true"
+             ondragstart="launcherRenderer.handleDragStart(event)"
+             ondragover="launcherRenderer.handleDragOver(event)"
+             ondrop="launcherRenderer.handleDrop(event)"
+             ondragend="launcherRenderer.handleDragEnd(event)">
           ${shortcutKey ? `<div class="mode-shortcut">${shortcutKey}</div>` : ''}
           <div class="mode-icon">${mode.icon}</div>
           <div class="mode-name">${this.escapeHtml(mode.name)}</div>
@@ -582,6 +589,100 @@ class SuperwhisperLauncherRenderer {
     ipcRenderer.send('remove-mode-hotkey', modeKey);
     this.showNotification('ホットキーを削除しました', 'success');
     this.renderIconSettings();
+  }
+
+  // ドラッグ&ドロップ処理
+  handleDragStart(e) {
+    this.draggedElement = e.target.closest('.mode-tile');
+    this.draggedKey = this.draggedElement.dataset.key;
+    
+    // ドラッグ中の視覚効果
+    this.draggedElement.classList.add('dragging');
+    
+    // データ転送
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.draggedElement.outerHTML);
+    
+    // ドラッグ中はクリックイベントを無効化
+    this.draggedElement.style.pointerEvents = 'none';
+  }
+
+  handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    
+    const targetTile = e.target.closest('.mode-tile');
+    if (targetTile && targetTile !== this.draggedElement) {
+      // ドロップターゲットの視覚効果
+      document.querySelectorAll('.mode-tile.drag-over').forEach(tile => {
+        tile.classList.remove('drag-over');
+      });
+      targetTile.classList.add('drag-over');
+    }
+  }
+
+  handleDrop(e) {
+    e.preventDefault();
+    
+    const targetTile = e.target.closest('.mode-tile');
+    if (targetTile && targetTile !== this.draggedElement) {
+      const targetKey = targetTile.dataset.key;
+      
+      // 現在の順序を取得
+      const currentOrder = this.currentModes.map(mode => mode.key);
+      const draggedIndex = currentOrder.indexOf(this.draggedKey);
+      const targetIndex = currentOrder.indexOf(targetKey);
+      
+      if (draggedIndex !== -1 && targetIndex !== -1) {
+        // 配列を並び替え
+        currentOrder.splice(draggedIndex, 1);
+        currentOrder.splice(targetIndex, 0, this.draggedKey);
+        
+        // 順序をメインプロセスに保存
+        ipcRenderer.send('update-mode-order', currentOrder);
+        
+        // 表示を更新
+        this.reorderModes(currentOrder);
+        
+        this.showNotification('モードの順序を変更しました', 'success');
+      }
+    }
+    
+    // 視覚効果をクリア
+    this.clearDragEffects();
+  }
+
+  handleDragEnd(e) {
+    // ドラッグ終了後の処理
+    this.clearDragEffects();
+  }
+
+  clearDragEffects() {
+    // すべての視覚効果をクリア
+    document.querySelectorAll('.mode-tile').forEach(tile => {
+      tile.classList.remove('dragging', 'drag-over');
+      tile.style.pointerEvents = '';
+    });
+    
+    this.draggedElement = null;
+    this.draggedKey = null;
+  }
+
+  reorderModes(newOrder) {
+    // 新しい順序でモードを並び替え
+    const reorderedModes = newOrder.map(key => 
+      this.currentModes.find(mode => mode.key === key)
+    ).filter(Boolean);
+    
+    // 順序にないモードがあれば末尾に追加
+    this.currentModes.forEach(mode => {
+      if (!newOrder.includes(mode.key)) {
+        reorderedModes.push(mode);
+      }
+    });
+    
+    this.currentModes = reorderedModes;
+    this.renderModes(this.currentModes);
   }
 
   // HTMLエスケープ

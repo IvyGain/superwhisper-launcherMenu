@@ -364,11 +364,34 @@ class SuperwhisperLauncher {
         }
       }
 
+      // カスタム順序を適用
+      this.applyCustomOrder();
       this.sendModesToWindow(this.modesData);
       console.log(`${this.modesData.length}個のモードを読み込みました`);
     } catch (error) {
       console.error('モード読み込みエラー:', error);
     }
+  }
+
+  // カスタム順序を適用
+  applyCustomOrder() {
+    const customOrder = this.store.get('modeOrder', []);
+    if (customOrder.length === 0) return;
+
+    const orderedModes = [];
+    const remainingModes = [...this.modesData];
+
+    // 保存された順序に従って配置
+    customOrder.forEach(key => {
+      const modeIndex = remainingModes.findIndex(mode => mode.key === key);
+      if (modeIndex !== -1) {
+        orderedModes.push(remainingModes.splice(modeIndex, 1)[0]);
+      }
+    });
+
+    // 残りのモードを末尾に追加
+    orderedModes.push(...remainingModes);
+    this.modesData = orderedModes;
   }
   
   sendModesToWindow(modes) {
@@ -508,6 +531,11 @@ class SuperwhisperLauncher {
       this.store.delete(`modeHotkeys.${modeKey}`);
       this.setupModeHotkeys();
       event.reply('mode-hotkey-removed', modeKey);
+    });
+
+    ipcMain.on('update-mode-order', (event, orderedKeys) => {
+      this.store.set('modeOrder', orderedKeys);
+      console.log('モード順序を保存しました:', orderedKeys);
     });
   }
 
