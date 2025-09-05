@@ -178,7 +178,89 @@ class SuperwhisperLauncherRenderer {
   // 設定画面を開く
   openSettings() {
     this.renderIconSettings();
+    this.loadCurrentHotkeys();
+    this.setupHotkeyListeners();
+    this.setupSettingsUI();
     this.elements.settingsModal.style.display = 'flex';
+  }
+
+  // 現在のホットキー設定を読み込み
+  loadCurrentHotkeys() {
+    ipcRenderer.send('get-hotkeys');
+    ipcRenderer.once('current-hotkeys', (event, hotkeys) => {
+      const launcherInput = document.querySelector('.shortcut-input[data-key="launcher"]');
+      const processAgainInput = document.querySelector('.shortcut-input[data-key="processAgain"]');
+      if (launcherInput) launcherInput.value = hotkeys.launcher;
+      if (processAgainInput) processAgainInput.value = hotkeys.processAgain;
+    });
+  }
+
+  // 設定UIの初期化
+  setupSettingsUI() {
+    // ショートカット入力にdata-key属性を設定
+    const inputs = document.querySelectorAll('.shortcut-input');
+    if (inputs[0]) inputs[0].dataset.key = 'launcher';
+    if (inputs[1]) inputs[1].dataset.key = 'processAgain';
+  }
+
+  // ホットキー設定のリスナー設定
+  setupHotkeyListeners() {
+    const changeButtons = document.querySelectorAll('.shortcut-change-btn');
+    changeButtons.forEach(btn => {
+      btn.onclick = (e) => {
+        const input = e.target.previousElementSibling;
+        const key = input.dataset.key;
+        this.captureHotkey(input, key);
+      };
+    });
+
+    // 折りたたみヘッダーのクリックイベント
+    const collapsibleHeader = document.querySelector('.collapsible-header');
+    if (collapsibleHeader) {
+      collapsibleHeader.onclick = () => {
+        const collapsible = collapsibleHeader.parentElement;
+        collapsible.classList.toggle('collapsed');
+      };
+    }
+  }
+
+  // ホットキーのキャプチャ
+  captureHotkey(input, key) {
+    input.value = 'キーを押してください...';
+    input.classList.add('capturing');
+    
+    const handleKeyDown = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const keys = [];
+      if (e.metaKey) keys.push('Cmd');
+      if (e.altKey) keys.push('Option');
+      if (e.ctrlKey) keys.push('Ctrl');
+      if (e.shiftKey) keys.push('Shift');
+      
+      if (e.key && e.key !== 'Meta' && e.key !== 'Alt' && e.key !== 'Control' && e.key !== 'Shift') {
+        const keyName = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+        keys.push(keyName);
+      }
+      
+      if (keys.length > 1 || (keys.length === 1 && keys[0] !== 'Escape')) {
+        const shortcut = keys.join('+');
+        input.value = shortcut;
+        input.classList.remove('capturing');
+        
+        // ホットキーを更新
+        ipcRenderer.send('update-hotkey', { key, shortcut });
+        
+        document.removeEventListener('keydown', handleKeyDown);
+      } else if (keys[0] === 'Escape') {
+        input.value = input.defaultValue || '';
+        input.classList.remove('capturing');
+        document.removeEventListener('keydown', handleKeyDown);
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
   }
 
   // 設定画面を閉じる

@@ -149,10 +149,19 @@ class SuperwhisperLauncher {
   // グローバルショートカットの設定
   setupGlobalShortcuts() {
     try {
-      globalShortcut.register('CommandOrControl+Shift+W', () => {
+      // ランチャー表示のホットキー
+      const launcherHotkey = this.store.get('hotkeys.launcher', 'Option+V');
+      this.registerShortcut(launcherHotkey, () => {
         this.showWindow();
       });
 
+      // ProcessAgainのホットキー
+      const processAgainHotkey = this.store.get('hotkeys.processAgain', 'Option+P');
+      this.registerShortcut(processAgainHotkey, () => {
+        this.launchProcessAgain();
+      });
+
+      // モード直接起動のホットキー
       for (let i = 1; i <= 9; i++) {
         globalShortcut.register(`CommandOrControl+${i}`, () => {
           this.launchModeByIndex(i - 1);
@@ -164,6 +173,83 @@ class SuperwhisperLauncher {
     } catch (error) {
       console.log('グローバルショートカット設定エラー:', error);
     }
+  }
+
+  // ショートカット登録ヘルパー
+  registerShortcut(shortcut, callback) {
+    try {
+      // macOSのキー名をElectronの形式に変換
+      const electronShortcut = shortcut
+        .replace('Option', 'Alt')
+        .replace('Cmd', 'CommandOrControl');
+      
+      if (globalShortcut.isRegistered(electronShortcut)) {
+        globalShortcut.unregister(electronShortcut);
+      }
+      
+      globalShortcut.register(electronShortcut, callback);
+      console.log(`ショートカット登録: ${shortcut} -> ${electronShortcut}`);
+    } catch (error) {
+      console.error(`ショートカット登録エラー: ${shortcut}`, error);
+    }
+  }
+
+  // ProcessAgainを直接起動
+  launchProcessAgain() {
+    try {
+      console.log('ProcessAgainを起動中...');
+      
+      // ProcessAgainの直接起動を試みる
+      // まずSuperwhisperをアクティブにする
+      shell.openExternal('superwhisper://').then(() => {
+        // 少し待ってからProcessAgainを実行
+        setTimeout(() => {
+          // AppleScriptを使用してProcessAgainを実行
+          const { exec } = require('child_process');
+          const script = `
+            tell application "Superwhisper"
+              activate
+              delay 0.2
+            end tell
+            tell application "System Events"
+              tell process "Superwhisper"
+                try
+                  -- ProcessAgainのメニューアイテムをクリック
+                  click menu item "Process Again" of menu "Edit" of menu bar 1
+                end try
+              end tell
+            end tell
+          `;
+          
+          exec(`osascript -e '${script}'`, (error, stdout, stderr) => {
+            if (error) {
+              console.error('ProcessAgain実行エラー:', error);
+              // フォールバック：キーボードショートカットを送信
+              this.sendProcessAgainShortcut();
+            } else {
+              console.log('ProcessAgainを実行しました');
+            }
+          });
+        }, 300);
+      }).catch(error => {
+        console.error('Superwhisper起動エラー:', error);
+        this.sendProcessAgainShortcut();
+      });
+      
+    } catch (error) {
+      console.error('ProcessAgain起動エラー:', error);
+    }
+  }
+
+  // ProcessAgainのキーボードショートカットを送信
+  sendProcessAgainShortcut() {
+    const { exec } = require('child_process');
+    // Cmd+Shift+Rを送信（SuperwhisperのProcessAgainのデフォルトショートカット）
+    exec(`osascript -e 'tell application "System Events" to keystroke "r" using {command down, shift down}'`, (error) => {
+      if (error) {
+        console.error('キーストローク送信エラー:', error);
+      }
+    });
   }
 
   // モードフォルダの監視
@@ -347,6 +433,23 @@ class SuperwhisperLauncher {
 
   // IPCイベントハンドラの設定
   setupIpcHandlers() {
+    // ショートカット設定の更新
+    ipcMain.on('update-hotkey', (event, { key, shortcut }) => {
+      this.store.set(`hotkeys.${key}`, shortcut);
+      // ショートカットを再登録
+      globalShortcut.unregisterAll();
+      this.setupGlobalShortcuts();
+      event.reply('hotkey-updated', { key, shortcut });
+    });
+
+    // 現在のホットキー設定を取得
+    ipcMain.on('get-hotkeys', (event) => {
+      const hotkeys = {
+        launcher: this.store.get('hotkeys.launcher', 'Option+V'),
+        processAgain: this.store.get('hotkeys.processAgain', 'Option+P')
+      };
+      event.reply('current-hotkeys', hotkeys);
+    });
     ipcMain.on('launch-mode', (event, modeKey) => {
       this.launchMode(modeKey);
     });
