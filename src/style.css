@@ -428,6 +428,7 @@ body {
   background: var(--color-surface-secondary);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
+  justify-content: space-between;
 }
 
 .icon-setting-item .mode-info {
@@ -444,6 +445,51 @@ body {
   font-size: 0.75em;
   color: var(--color-text-secondary);
   opacity: 0.8;
+}
+
+.icon-setting-item .mode-info .hotkey-info {
+  font-size: 0.7em;
+  color: var(--color-primary);
+  margin-top: 2px;
+  opacity: 0.9;
+}
+
+.mode-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hotkey-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.hotkey-btn, .remove-hotkey-btn {
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.hotkey-btn:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+.remove-hotkey-btn {
+  background: var(--color-error);
+  color: white;
+  font-size: 12px;
+  padding: 4px 6px;
+}
+
+.remove-hotkey-btn:hover {
+  background: #d32f2f;
 }
 
 .icon-picker {

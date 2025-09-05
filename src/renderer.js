@@ -275,21 +275,35 @@ class SuperwhisperLauncherRenderer {
       return;
     }
     
-    this.elements.iconSettings.innerHTML = this.currentModes.map((mode, index) => {
-      const shortcutKey = index < 9 ? (index + 1).toString() : index === 9 ? '0' : '';
-      
-      return `
-        <div class="icon-setting-item">
-          <div class="mode-info">
-            <div class="name">${this.escapeHtml(mode.name)}</div>
-            <div class="type">${this.escapeHtml(mode.type || 'custom')} ${shortcutKey ? `• Cmd+${shortcutKey}` : ''}</div>
+    // モードホットキーを取得
+    ipcRenderer.send('get-mode-hotkeys');
+    ipcRenderer.once('current-mode-hotkeys', (event, hotkeys) => {
+      this.elements.iconSettings.innerHTML = this.currentModes.map((mode, index) => {
+        const shortcutKey = index < 9 ? (index + 1).toString() : index === 9 ? '0' : '';
+        const customHotkey = hotkeys[mode.key] || '';
+        
+        return `
+          <div class="icon-setting-item">
+            <div class="mode-info">
+              <div class="name">${this.escapeHtml(mode.name)}</div>
+              <div class="type">${this.escapeHtml(mode.type || 'custom')} ${shortcutKey ? `• Cmd+${shortcutKey}` : ''}</div>
+              <div class="hotkey-info">${customHotkey ? `カスタム: ${customHotkey}` : 'カスタムホットキーなし'}</div>
+            </div>
+            <div class="mode-controls">
+              <button class="icon-picker" onclick="launcherRenderer.showEmojiPicker('${mode.key}', this)">
+                ${mode.icon}
+              </button>
+              <div class="hotkey-controls">
+                <button class="hotkey-btn" onclick="launcherRenderer.setModeHotkey('${mode.key}')">
+                  ⌨️
+                </button>
+                ${customHotkey ? `<button class="remove-hotkey-btn" onclick="launcherRenderer.removeModeHotkey('${mode.key}')">×</button>` : ''}
+              </div>
+            </div>
           </div>
-          <button class="icon-picker" onclick="launcherRenderer.showEmojiPicker('${mode.key}', this)">
-            ${mode.icon}
-          </button>
-        </div>
-      `;
-    }).join('');
+        `;
+      }).join('');
+    });
   }
 
   // 絵文字ピッカーの表示
@@ -438,6 +452,136 @@ class SuperwhisperLauncherRenderer {
   updateIcon(modeKey, icon) {
     ipcRenderer.send('update-icon', modeKey, icon);
     this.showNotification('アイコンを更新しました', 'success');
+  }
+
+  // モードホットキー設定
+  setModeHotkey(modeKey) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      backdrop-filter: blur(10px);
+    `;
+    
+    const content = document.createElement('div');
+    content.style.cssText = `
+      background: var(--color-surface);
+      border-radius: var(--radius-xl);
+      padding: 30px;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+      border: 1px solid var(--color-border);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    `;
+    
+    content.innerHTML = `
+      <h3 style="margin-bottom: 20px; color: var(--color-text-primary);">ホットキーを設定</h3>
+      <p style="margin-bottom: 20px; color: var(--color-text-secondary);">キーの組み合わせを押してください</p>
+      <input type="text" id="hotkeyInput" placeholder="例: Option+1" readonly style="
+        width: 100%;
+        padding: 15px;
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        background: var(--color-surface-secondary);
+        color: var(--color-text-primary);
+        text-align: center;
+        font-size: 16px;
+        margin-bottom: 20px;
+      ">
+      <div>
+        <button id="cancelBtn" style="
+          background: var(--color-surface-secondary);
+          border: 1px solid var(--color-border);
+          color: var(--color-text-primary);
+          padding: 10px 20px;
+          border-radius: 6px;
+          margin-right: 10px;
+          cursor: pointer;
+        ">キャンセル</button>
+        <button id="saveBtn" disabled style="
+          background: var(--color-primary);
+          border: none;
+          color: white;
+          padding: 10px 20px;
+          border-radius: 6px;
+          cursor: pointer;
+          opacity: 0.5;
+        ">保存</button>
+      </div>
+    `;
+    
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+    
+    const input = content.querySelector('#hotkeyInput');
+    const saveBtn = content.querySelector('#saveBtn');
+    const cancelBtn = content.querySelector('#cancelBtn');
+    
+    let capturedHotkey = '';
+    
+    const handleKeyDown = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const keys = [];
+      if (e.metaKey) keys.push('Cmd');
+      if (e.altKey) keys.push('Option');
+      if (e.ctrlKey) keys.push('Ctrl');
+      if (e.shiftKey) keys.push('Shift');
+      
+      if (e.key && e.key !== 'Meta' && e.key !== 'Alt' && e.key !== 'Control' && e.key !== 'Shift') {
+        const keyName = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+        keys.push(keyName);
+      }
+      
+      if (keys.length > 1) {
+        capturedHotkey = keys.join('+');
+        input.value = capturedHotkey;
+        saveBtn.disabled = false;
+        saveBtn.style.opacity = '1';
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    
+    cancelBtn.onclick = () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      modal.remove();
+    };
+    
+    saveBtn.onclick = () => {
+      if (capturedHotkey) {
+        ipcRenderer.send('update-mode-hotkey', modeKey, capturedHotkey);
+        this.showNotification('ホットキーを設定しました', 'success');
+        document.removeEventListener('keydown', handleKeyDown);
+        modal.remove();
+        this.renderIconSettings();
+      }
+    };
+    
+    modal.onclick = (e) => {
+      if (e.target === modal) {
+        document.removeEventListener('keydown', handleKeyDown);
+        modal.remove();
+      }
+    };
+  }
+
+  // モードホットキー削除
+  removeModeHotkey(modeKey) {
+    ipcRenderer.send('remove-mode-hotkey', modeKey);
+    this.showNotification('ホットキーを削除しました', 'success');
+    this.renderIconSettings();
   }
 
   // HTMLエスケープ

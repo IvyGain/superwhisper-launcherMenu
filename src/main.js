@@ -170,8 +170,35 @@ class SuperwhisperLauncher {
       globalShortcut.register('CommandOrControl+0', () => {
         this.launchModeByIndex(9);
       });
+
+      // カスタムモードホットキー
+      this.setupModeHotkeys();
     } catch (error) {
       console.log('グローバルショートカット設定エラー:', error);
+    }
+  }
+
+  // モード個別ホットキーの設定
+  setupModeHotkeys() {
+    try {
+      // 既存のモードホットキーをクリア
+      globalShortcut.getRegisteredAccelerators().forEach(accelerator => {
+        if (accelerator.includes('Alt+') && !accelerator.includes('Alt+V') && !accelerator.includes('Alt+P')) {
+          globalShortcut.unregister(accelerator);
+        }
+      });
+
+      // 各モードのカスタムホットキーを登録
+      this.modesData.forEach(mode => {
+        const hotkey = this.store.get(`modeHotkeys.${mode.key}`, '');
+        if (hotkey) {
+          this.registerShortcut(hotkey, () => {
+            this.launchMode(mode.key);
+          });
+        }
+      });
+    } catch (error) {
+      console.log('モードホットキー設定エラー:', error);
     }
   }
 
@@ -461,6 +488,26 @@ class SuperwhisperLauncher {
     ipcMain.on('update-icon', (event, modeKey, icon) => {
       this.store.set(`icons.${modeKey}`, icon);
       this.loadModes();
+    });
+
+    ipcMain.on('update-mode-hotkey', (event, modeKey, hotkey) => {
+      this.store.set(`modeHotkeys.${modeKey}`, hotkey);
+      this.setupModeHotkeys();
+      event.reply('mode-hotkey-updated', { modeKey, hotkey });
+    });
+
+    ipcMain.on('get-mode-hotkeys', (event) => {
+      const hotkeys = {};
+      this.modesData.forEach(mode => {
+        hotkeys[mode.key] = this.store.get(`modeHotkeys.${mode.key}`, '');
+      });
+      event.reply('current-mode-hotkeys', hotkeys);
+    });
+
+    ipcMain.on('remove-mode-hotkey', (event, modeKey) => {
+      this.store.delete(`modeHotkeys.${modeKey}`);
+      this.setupModeHotkeys();
+      event.reply('mode-hotkey-removed', modeKey);
     });
   }
 
