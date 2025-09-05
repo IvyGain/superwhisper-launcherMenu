@@ -475,6 +475,8 @@ class SuperwhisperLauncher {
     app.on('activate', () => {
       if (this.mainWindow === null) {
         this.createWindow();
+      } else {
+        this.showWindow();
       }
     });
 
