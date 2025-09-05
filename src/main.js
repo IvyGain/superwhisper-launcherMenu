@@ -186,7 +186,13 @@ class SuperwhisperLauncher {
       if (this.registeredModeHotkeys) {
         this.registeredModeHotkeys.forEach(hotkey => {
           try {
-            globalShortcut.unregister(hotkey);
+            // ASCII文字のみのホットキーのみ解除を試行
+            if (/^[\x00-\x7F]+$/.test(hotkey)) {
+              const electronShortcut = hotkey
+                .replace('Option', 'Alt')
+                .replace('Cmd', 'CommandOrControl');
+              globalShortcut.unregister(electronShortcut);
+            }
           } catch (e) {
             console.log('ホットキー解除エラー:', e);
           }
@@ -198,10 +204,15 @@ class SuperwhisperLauncher {
       this.modesData.forEach(mode => {
         const hotkey = this.store.get(`modeHotkeys.${mode.key}`, '');
         if (hotkey) {
-          this.registerShortcut(hotkey, () => {
+          const success = this.registerShortcut(hotkey, () => {
             this.launchMode(mode.key);
           });
-          this.registeredModeHotkeys.push(hotkey);
+          if (success) {
+            this.registeredModeHotkeys.push(hotkey);
+          } else {
+            // 無効なホットキーは削除
+            this.store.delete(`modeHotkeys.${mode.key}`);
+          }
         }
       });
     } catch (error) {
@@ -212,6 +223,12 @@ class SuperwhisperLauncher {
   // ショートカット登録ヘルパー
   registerShortcut(shortcut, callback) {
     try {
+      // 無効な文字をチェック（ASCII文字のみ許可）
+      if (!/^[\x00-\x7F]+$/.test(shortcut)) {
+        console.log(`無効なホットキーをスキップ: ${shortcut}`);
+        return false;
+      }
+      
       // macOSのキー名をElectronの形式に変換
       const electronShortcut = shortcut
         .replace('Option', 'Alt')
@@ -223,8 +240,10 @@ class SuperwhisperLauncher {
       
       globalShortcut.register(electronShortcut, callback);
       console.log(`ショートカット登録: ${shortcut} -> ${electronShortcut}`);
+      return true;
     } catch (error) {
       console.error(`ショートカット登録エラー: ${shortcut}`, error);
+      return false;
     }
   }
 

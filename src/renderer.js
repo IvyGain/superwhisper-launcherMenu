@@ -553,6 +553,15 @@ class SuperwhisperLauncherRenderer {
       
       if (keys.length > 1) {
         capturedHotkey = keys.join('+');
+        
+        // ASCII文字のみかチェック
+        if (!/^[\x00-\x7F]+$/.test(capturedHotkey)) {
+          input.value = '無効なキーの組み合わせです';
+          saveBtn.disabled = true;
+          saveBtn.style.opacity = '0.5';
+          return;
+        }
+        
         input.value = capturedHotkey;
         saveBtn.disabled = false;
         saveBtn.style.opacity = '1';
