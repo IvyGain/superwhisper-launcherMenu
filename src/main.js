@@ -12,6 +12,7 @@ class SuperwhisperLauncher {
     this.modesData = [];
     this.loadModesTimeout = null;
     this.fileWatcher = null;
+    this.registeredModeHotkeys = [];
     
     this.init();
   }
@@ -181,12 +182,17 @@ class SuperwhisperLauncher {
   // モード個別ホットキーの設定
   setupModeHotkeys() {
     try {
-      // 既存のモードホットキーをクリア
-      globalShortcut.getRegisteredAccelerators().forEach(accelerator => {
-        if (accelerator.includes('Alt+') && !accelerator.includes('Alt+V') && !accelerator.includes('Alt+P')) {
-          globalShortcut.unregister(accelerator);
-        }
-      });
+      // 既存のモードホットキーを記録からクリア
+      if (this.registeredModeHotkeys) {
+        this.registeredModeHotkeys.forEach(hotkey => {
+          try {
+            globalShortcut.unregister(hotkey);
+          } catch (e) {
+            console.log('ホットキー解除エラー:', e);
+          }
+        });
+      }
+      this.registeredModeHotkeys = [];
 
       // 各モードのカスタムホットキーを登録
       this.modesData.forEach(mode => {
@@ -195,6 +201,7 @@ class SuperwhisperLauncher {
           this.registerShortcut(hotkey, () => {
             this.launchMode(mode.key);
           });
+          this.registeredModeHotkeys.push(hotkey);
         }
       });
     } catch (error) {
