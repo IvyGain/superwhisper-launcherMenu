@@ -170,15 +170,14 @@ class SuperwhisperLauncher {
         this.launchProcessAgain();
       });
 
-      // モード直接起動のホットキー
-      for (let i = 1; i <= 9; i++) {
-        globalShortcut.register(`CommandOrControl+${i}`, () => {
-          this.launchModeByIndex(i - 1);
-        });
+      // モード直接起動のホットキー（Cmd+1-9のみ、オン/オフ設定を確認）
+      if (this.store.get('hotkeys.numberShortcuts', true)) {
+        for (let i = 1; i <= 9; i++) {
+          globalShortcut.register(`CommandOrControl+${i}`, () => {
+            this.launchModeByIndex(i - 1);
+          });
+        }
       }
-      globalShortcut.register('CommandOrControl+0', () => {
-        this.launchModeByIndex(9);
-      });
 
       // カスタムモードホットキー
       this.setupModeHotkeys();
@@ -260,55 +259,63 @@ class SuperwhisperLauncher {
     try {
       console.log('ProcessAgainを起動中...');
       
-      // ProcessAgainの直接起動を試みる
-      // まずSuperwhisperをアクティブにする
-      shell.openExternal('superwhisper://').then(() => {
-        // 少し待ってからProcessAgainを実行
-        setTimeout(() => {
-          // AppleScriptを使用してProcessAgainを実行
-          const { exec } = require('child_process');
-          const script = `
-            tell application "Superwhisper"
-              activate
-              delay 0.2
-            end tell
-            tell application "System Events"
-              tell process "Superwhisper"
-                try
-                  -- ProcessAgainのメニューアイテムをクリック
-                  click menu item "Process Again" of menu "Edit" of menu bar 1
-                end try
-              end tell
-            end tell
-          `;
-          
-          exec(`osascript -e '${script}'`, (error, stdout, stderr) => {
-            if (error) {
-              console.error('ProcessAgain実行エラー:', error);
-              // フォールバック：キーボードショートカットを送信
-              this.sendProcessAgainShortcut();
-            } else {
-              console.log('ProcessAgainを実行しました');
-            }
-          });
-        }, 300);
-      }).catch(error => {
-        console.error('Superwhisper起動エラー:', error);
-        this.sendProcessAgainShortcut();
+      const { exec } = require('child_process');
+      
+      // より確実なAppleScriptを使用
+      const script = `
+        tell application "Superwhisper"
+          activate
+        end tell
+        
+        delay 0.3
+        
+        tell application "System Events"
+          tell process "Superwhisper"
+            -- メニューからProcessAgainを実行
+            try
+              click menu item "Process Again" of menu "Edit" of menu bar 1
+            on error
+              -- メニューが見つからない場合はキーボードショートカットを使用
+              keystroke "r" using {command down, shift down}
+            end try
+          end tell
+        end tell
+      `;
+      
+      exec(`osascript -e '${script.replace(/'/g, "'\"'\"'")}'`, (error, stdout, stderr) => {
+        if (error) {
+          console.error('ProcessAgain実行エラー:', error);
+          // 最終フォールバック
+          this.sendProcessAgainShortcut();
+        } else {
+          console.log('ProcessAgainを実行しました');
+        }
       });
       
     } catch (error) {
       console.error('ProcessAgain起動エラー:', error);
+      this.sendProcessAgainShortcut();
     }
   }
 
-  // ProcessAgainのキーボードショートカットを送信
+  // ProcessAgainのキーボードショートカットを送信（フォールバック）
   sendProcessAgainShortcut() {
     const { exec } = require('child_process');
-    // Cmd+Shift+Rを送信（SuperwhisperのProcessAgainのデフォルトショートカット）
-    exec(`osascript -e 'tell application "System Events" to keystroke "r" using {command down, shift down}'`, (error) => {
+    
+    // Superwhisperを最前面に持ってきてからショートカットを送信
+    const script = `
+      tell application "Superwhisper" to activate
+      delay 0.2
+      tell application "System Events"
+        keystroke "r" using {command down, shift down}
+      end tell
+    `;
+    
+    exec(`osascript -e '${script.replace(/'/g, "'\"'\"'")}'`, (error) => {
       if (error) {
-        console.error('キーストローク送信エラー:', error);
+        console.error('フォールバック実行エラー:', error);
+      } else {
+        console.log('フォールバックでProcessAgainを実行しました');
       }
     });
   }
@@ -570,6 +577,19 @@ class SuperwhisperLauncher {
     ipcMain.on('update-mode-order', (event, orderedKeys) => {
       this.store.set('modeOrder', orderedKeys);
       console.log('モード順序を保存しました:', orderedKeys);
+    });
+
+    ipcMain.on('get-number-shortcuts-setting', (event) => {
+      const enabled = this.store.get('hotkeys.numberShortcuts', true);
+      event.reply('current-number-shortcuts-setting', enabled);
+    });
+
+    ipcMain.on('update-number-shortcuts', (event, enabled) => {
+      this.store.set('hotkeys.numberShortcuts', enabled);
+      // ショートカットを再登録
+      globalShortcut.unregisterAll();
+      this.setupGlobalShortcuts();
+      console.log('Cmd+1-9ショートカット設定を更新:', enabled);
     });
   }
 

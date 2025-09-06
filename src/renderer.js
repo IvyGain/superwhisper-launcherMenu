@@ -97,15 +97,11 @@ class SuperwhisperLauncherRenderer {
         this.closeApp();
       }
       
-      // 数字キーでモード起動
+      // 数字キーでモード起動（1-9のみ）
       if (e.key >= '1' && e.key <= '9') {
         const index = parseInt(e.key) - 1;
         if (this.currentModes[index]) {
           this.launchMode(this.currentModes[index].key);
-        }
-      } else if (e.key === '0') {
-        if (this.currentModes[9]) {
-          this.launchMode(this.currentModes[9].key);
         }
       }
     });
@@ -140,12 +136,12 @@ class SuperwhisperLauncherRenderer {
     }
 
     this.elements.modesGrid.innerHTML = modes.map((mode, index) => {
-      const shortcutKey = index < 9 ? (index + 1).toString() : index === 9 ? '0' : '';
+      const shortcutKey = index < 9 ? (index + 1).toString() : '';
       
       return `
         <div class="mode-tile" 
              data-key="${mode.key}"
-             draggable="false">
+             >
           ${shortcutKey ? `<div class="mode-shortcut">${shortcutKey}</div>` : ''}
           <div class="mode-icon">${mode.icon}</div>
           <div class="mode-name">${this.escapeHtml(mode.name)}</div>
@@ -246,6 +242,31 @@ class SuperwhisperLauncherRenderer {
     const inputs = document.querySelectorAll('.shortcut-input');
     if (inputs[0]) inputs[0].dataset.key = 'launcher';
     if (inputs[1]) inputs[1].dataset.key = 'processAgain';
+    
+    // Cmd+1-9ショートカットのトグル設定
+    const toggle = document.getElementById('numberShortcutsToggle');
+    if (toggle) {
+      // 現在の設定を取得
+      ipcRenderer.send('get-number-shortcuts-setting');
+      ipcRenderer.once('current-number-shortcuts-setting', (event, enabled) => {
+        toggle.checked = enabled;
+        this.updateToggleLabel(toggle, enabled);
+      });
+      
+      // 変更時の処理
+      toggle.addEventListener('change', (e) => {
+        const enabled = e.target.checked;
+        ipcRenderer.send('update-number-shortcuts', enabled);
+        this.updateToggleLabel(toggle, enabled);
+      });
+    }
+  }
+  
+  updateToggleLabel(toggle, enabled) {
+    const label = toggle.parentElement.parentElement.querySelector('.toggle-label');
+    if (label) {
+      label.textContent = enabled ? '有効' : '無効';
+    }
   }
 
   // ホットキー設定のリスナー設定
@@ -324,7 +345,7 @@ class SuperwhisperLauncherRenderer {
     ipcRenderer.send('get-mode-hotkeys');
     ipcRenderer.once('current-mode-hotkeys', (event, hotkeys) => {
       this.elements.iconSettings.innerHTML = this.currentModes.map((mode, index) => {
-        const shortcutKey = index < 9 ? (index + 1).toString() : index === 9 ? '0' : '';
+        const shortcutKey = index < 9 ? (index + 1).toString() : '';
         const customHotkey = hotkeys[mode.key] || '';
         
         return `
