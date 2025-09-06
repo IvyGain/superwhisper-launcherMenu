@@ -9,6 +9,11 @@ class SuperwhisperLauncherRenderer {
       iconSettings: document.getElementById('iconSettings')
     };
     
+    // ドラッグ関連のプロパティ
+    this.draggedElement = null;
+    this.draggedKey = null;
+    this.isDragging = false;
+    
     this.init();
   }
   
@@ -78,6 +83,7 @@ class SuperwhisperLauncherRenderer {
   // IPCリスナーの設定
   setupIpcListeners() {
     ipcRenderer.on('modes-updated', (event, modes) => {
+      console.log('modes-updated: モード更新', modes);
       this.currentModes = modes;
       this.renderModes(modes);
     });
@@ -139,7 +145,7 @@ class SuperwhisperLauncherRenderer {
       return `
         <div class="mode-tile" 
              data-key="${mode.key}"
-             draggable="true">
+             draggable="false">
           ${shortcutKey ? `<div class="mode-shortcut">${shortcutKey}</div>` : ''}
           <div class="mode-icon">${mode.icon}</div>
           <div class="mode-name">${this.escapeHtml(mode.name)}</div>
@@ -155,12 +161,26 @@ class SuperwhisperLauncherRenderer {
   // タイルのイベントリスナー設定
   setupTileEventListeners() {
     const tiles = document.querySelectorAll('.mode-tile');
+    console.log('setupTileEventListeners: タイル数=', tiles.length);
     
-    tiles.forEach(tile => {
-      // クリックイベント
+    tiles.forEach((tile, index) => {
+      console.log(`タイル[${index}] key=${tile.dataset.key}, draggable=${tile.draggable}`);
+      
+      // クリックイベント - ドラッグ中は無効化
       tile.addEventListener('click', (e) => {
-        const key = tile.dataset.key;
-        this.launchMode(key);
+        if (!this.isDragging) {
+          const key = tile.dataset.key;
+          this.launchMode(key);
+        }
+      });
+      
+      // マウスダウンイベントでドラッグ準備
+      tile.addEventListener('mousedown', (e) => {
+        console.log('mousedown イベント発生', e.target);
+        // 左クリックのみ
+        if (e.button === 0) {
+          this.prepareDrag(e, tile);
+        }
       });
       
       // ドラッグイベント
@@ -168,6 +188,7 @@ class SuperwhisperLauncherRenderer {
       tile.addEventListener('dragover', (e) => this.handleDragOver(e));
       tile.addEventListener('drop', (e) => this.handleDrop(e));
       tile.addEventListener('dragend', (e) => this.handleDragEnd(e));
+      tile.addEventListener('dragleave', (e) => this.handleDragLeave(e));
     });
   }
 
@@ -617,22 +638,36 @@ class SuperwhisperLauncherRenderer {
     this.renderIconSettings();
   }
 
+  // ドラッグ準備
+  prepareDrag(e, tile) {
+    // ドラッグ可能に設定
+    tile.setAttribute('draggable', 'true');
+  }
+
   // ドラッグ&ドロップ処理
   handleDragStart(e) {
-    console.log('ドラッグ開始:', e.target);
+    console.log('handleDragStart: イベント発生', e);
+    console.log('handleDragStart: ターゲット=', e.target);
+    this.isDragging = true;
     this.draggedElement = e.target.closest('.mode-tile');
     this.draggedKey = this.draggedElement.dataset.key;
-    console.log('ドラッグ対象:', this.draggedKey);
+    console.log('handleDragStart: ドラッグ対象=', this.draggedKey);
     
     // ドラッグ中の視覚効果
     this.draggedElement.classList.add('dragging');
     
     // データ転送
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', this.draggedElement.outerHTML);
+    e.dataTransfer.setData('text/plain', this.draggedKey);
     
-    // ドラッグ中はクリックイベントを無効化
-    this.draggedElement.style.pointerEvents = 'none';
+    // ドラッグイメージの設定
+    const dragImage = this.draggedElement.cloneNode(true);
+    dragImage.style.opacity = '0.7';
+    dragImage.style.position = 'absolute';
+    dragImage.style.top = '-1000px';
+    document.body.appendChild(dragImage);
+    e.dataTransfer.setDragImage(dragImage, e.offsetX, e.offsetY);
+    setTimeout(() => document.body.removeChild(dragImage), 0);
   }
 
   handleDragOver(e) {
@@ -681,8 +716,22 @@ class SuperwhisperLauncherRenderer {
   }
 
   handleDragEnd(e) {
+    console.log('handleDragEnd: ドラッグ終了');
     // ドラッグ終了後の処理
     this.clearDragEffects();
+    
+    // 少し遅延してフラグをリセット（クリックイベントとの競合を避ける）
+    setTimeout(() => {
+      this.isDragging = false;
+    }, 100);
+  }
+  
+  handleDragLeave(e) {
+    // ドラッグがタイルから離れた時
+    const targetTile = e.target.closest('.mode-tile');
+    if (targetTile && targetTile !== this.draggedElement) {
+      targetTile.classList.remove('drag-over');
+    }
   }
 
   clearDragEffects() {
@@ -690,6 +739,8 @@ class SuperwhisperLauncherRenderer {
     document.querySelectorAll('.mode-tile').forEach(tile => {
       tile.classList.remove('dragging', 'drag-over');
       tile.style.pointerEvents = '';
+      // ドラッグ可能属性をリセット
+      tile.setAttribute('draggable', 'false');
     });
     
     this.draggedElement = null;
@@ -697,6 +748,7 @@ class SuperwhisperLauncherRenderer {
   }
 
   reorderModes(newOrder) {
+    console.log('reorderModes: 新しい順序=', newOrder);
     // 新しい順序でモードを並び替え
     const reorderedModes = newOrder.map(key => 
       this.currentModes.find(mode => mode.key === key)
@@ -710,6 +762,7 @@ class SuperwhisperLauncherRenderer {
     });
     
     this.currentModes = reorderedModes;
+    console.log('reorderModes: renderModesを呼び出します');
     this.renderModes(this.currentModes);
   }
 

@@ -56,6 +56,9 @@ class SuperwhisperLauncher {
 
     this.mainWindow.loadFile('src/index.html');
     
+    // 開発者ツールを開く（デバッグ用）
+    // this.mainWindow.webContents.openDevTools();
+    
     this.mainWindow.on('closed', () => {
       this.mainWindow = null;
     });
