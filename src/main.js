@@ -52,7 +52,7 @@ class SuperwhisperLauncher {
       alwaysOnTop: true,
       transparent: true,
       backgroundColor: '#00000000',
-      titleBarStyle: 'hidden'
+      titleBarStyle: 'hiddenInset'
     });
 
     this.mainWindow.loadFile('src/index.html');

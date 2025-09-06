@@ -108,38 +108,9 @@ body {
   -webkit-app-region: drag;
 }
 
-/* ウィンドウコントロール */
-.window-controls {
-  display: flex;
-  gap: 8px;
-  -webkit-app-region: no-drag;
-}
-
-.window-btn {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: none;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  position: relative;
-}
-
-.close-btn {
-  background: #ff5f57;
-}
-
-.minimize-btn {
-  background: #ffbd2e;
-}
-
-.zoom-btn {
-  background: #28ca42;
-}
-
-.window-btn:hover {
-  transform: scale(1.1);
-  opacity: 0.8;
+/* ヘッダー左側（ネイティブボタン用のスペース） */
+.header-left {
+  width: 80px;
 }
 
 /* ヘッダー中央 */
@@ -210,22 +181,28 @@ body {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
+  padding: 6px;
+  border-radius: 6px;
   transition: all 0.15s ease;
-  font-size: 12px;
   opacity: 0.6;
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--color-text-secondary);
 }
 
 .settings-btn:hover {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   transform: scale(1.05);
+  color: var(--color-text-primary);
+}
+
+.settings-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* モードグリッド */
