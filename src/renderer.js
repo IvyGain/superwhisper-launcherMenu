@@ -138,13 +138,8 @@ class SuperwhisperLauncherRenderer {
       
       return `
         <div class="mode-tile" 
-             onclick="launcherRenderer.launchMode('${mode.key}')" 
              data-key="${mode.key}"
-             draggable="true"
-             ondragstart="launcherRenderer.handleDragStart(event)"
-             ondragover="launcherRenderer.handleDragOver(event)"
-             ondrop="launcherRenderer.handleDrop(event)"
-             ondragend="launcherRenderer.handleDragEnd(event)">
+             draggable="true">
           ${shortcutKey ? `<div class="mode-shortcut">${shortcutKey}</div>` : ''}
           <div class="mode-icon">${mode.icon}</div>
           <div class="mode-name">${this.escapeHtml(mode.name)}</div>
@@ -152,6 +147,28 @@ class SuperwhisperLauncherRenderer {
         </div>
       `;
     }).join('');
+    
+    // イベントリスナーを設定
+    this.setupTileEventListeners();
+  }
+
+  // タイルのイベントリスナー設定
+  setupTileEventListeners() {
+    const tiles = document.querySelectorAll('.mode-tile');
+    
+    tiles.forEach(tile => {
+      // クリックイベント
+      tile.addEventListener('click', (e) => {
+        const key = tile.dataset.key;
+        this.launchMode(key);
+      });
+      
+      // ドラッグイベント
+      tile.addEventListener('dragstart', (e) => this.handleDragStart(e));
+      tile.addEventListener('dragover', (e) => this.handleDragOver(e));
+      tile.addEventListener('drop', (e) => this.handleDrop(e));
+      tile.addEventListener('dragend', (e) => this.handleDragEnd(e));
+    });
   }
 
   // モードの起動
@@ -602,8 +619,10 @@ class SuperwhisperLauncherRenderer {
 
   // ドラッグ&ドロップ処理
   handleDragStart(e) {
+    console.log('ドラッグ開始:', e.target);
     this.draggedElement = e.target.closest('.mode-tile');
     this.draggedKey = this.draggedElement.dataset.key;
+    console.log('ドラッグ対象:', this.draggedKey);
     
     // ドラッグ中の視覚効果
     this.draggedElement.classList.add('dragging');
@@ -739,18 +758,19 @@ let launcherRenderer;
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
   launcherRenderer = new SuperwhisperLauncherRenderer();
+  window.launcherRenderer = launcherRenderer;
 });
 
 // HTMLから呼び出すための関数をグローバルに公開
-function openSettings() {
+window.openSettings = function() {
   if (launcherRenderer) launcherRenderer.openSettings();
 }
 
-function closeSettings() {
+window.closeSettings = function() {
   if (launcherRenderer) launcherRenderer.closeSettings();
 }
 
-function closeApp() {
+window.closeApp = function() {
   if (launcherRenderer) launcherRenderer.closeApp();
 }
 

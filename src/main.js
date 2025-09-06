@@ -155,6 +155,11 @@ class SuperwhisperLauncher {
       this.registerShortcut(launcherHotkey, () => {
         this.showWindow();
       });
+      
+      // Cmd+Shift+W でもランチャーを表示
+      this.registerShortcut('Cmd+Shift+W', () => {
+        this.showWindow();
+      });
 
       // ProcessAgainのホットキー
       const processAgainHotkey = this.store.get('hotkeys.processAgain', 'Option+P');
