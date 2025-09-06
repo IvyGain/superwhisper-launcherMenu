@@ -293,6 +293,8 @@ body {
   -webkit-box-orient: vertical;
   word-break: break-word;
   hyphens: auto;
+  /* 1行の場合でも中央揃えを維持 */
+  min-height: 30px;
 }
 
 .mode-type {
