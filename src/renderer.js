@@ -144,7 +144,9 @@ class SuperwhisperLauncherRenderer {
              >
           ${shortcutKey ? `<div class="mode-shortcut">${shortcutKey}</div>` : ''}
           <div class="mode-icon">${mode.icon}</div>
-          <div class="mode-name">${this.escapeHtml(mode.name)}</div>
+          <div class="mode-name">
+            <div class="mode-name-text">${this.escapeHtml(mode.name)}</div>
+          </div>
           <div class="mode-type">${this.escapeHtml(mode.type || 'custom')}</div>
         </div>
       `;
