@@ -276,7 +276,7 @@ body {
   font-weight: 400;
   color: var(--color-text-primary);
   margin-top: 4px;
-  line-height: 1.25;
+  line-height: 1.2;
   height: 30px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -287,6 +287,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* 2行制限のためのCSS */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   word-break: break-word;
   hyphens: auto;
 }
