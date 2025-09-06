@@ -283,18 +283,17 @@ body {
   text-align: center;
   padding: 0 4px;
   flex-shrink: 0;
-  /* テキストエリア内で縦中央揃え */
-  display: flex;
-  align-items: center;
-  justify-content: center;
   /* 2行制限のためのCSS */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   word-break: break-word;
-  hyphens: auto;
   /* 1行の場合でも中央揃えを維持 */
   min-height: 30px;
+  /* 垂直中央配置 */
+  display: -webkit-box;
+  -webkit-box-pack: center;
+  -webkit-box-align: center;
 }
 
 .mode-type {
@@ -823,6 +822,8 @@ body {
     height: 34px;
     margin-top: 6px;
     padding: 0 6px;
+    line-height: 1.2;
+    -webkit-line-clamp: 2;
   }
   
   .mode-type {
@@ -855,9 +856,11 @@ body {
   
   .mode-name {
     font-size: 11px;
-    height: 30px;
+    height: 28px;
     margin-top: 3px;
     padding: 0 3px;
+    line-height: 1.15;
+    -webkit-line-clamp: 2;
   }
   
   .mode-shortcut {
@@ -896,9 +899,11 @@ body {
   
   .mode-name {
     font-size: 10px;
-    height: 28px;
+    height: 26px;
     margin-top: 2px;
     padding: 0 2px;
+    line-height: 1.1;
+    -webkit-line-clamp: 2;
   }
   
   .mode-type {
