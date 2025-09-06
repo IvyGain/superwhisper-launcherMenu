@@ -311,9 +311,17 @@ class SuperwhisperLauncherRenderer {
     input.value = 'キーを押してください...';
     input.classList.add('capturing');
     
+    let capturedKeys = [];
+    let isCapturing = false;
+    
     const handleKeyDown = (e) => {
       e.preventDefault();
       e.stopPropagation();
+      
+      if (!isCapturing) {
+        isCapturing = true;
+        capturedKeys = [];
+      }
       
       const keys = [];
       if (e.metaKey) keys.push('Cmd');
@@ -321,31 +329,55 @@ class SuperwhisperLauncherRenderer {
       if (e.ctrlKey) keys.push('Ctrl');
       if (e.shiftKey) keys.push('Shift');
       
+      // メイン文字キーを追加
       if (e.key && e.key !== 'Meta' && e.key !== 'Alt' && e.key !== 'Control' && e.key !== 'Shift') {
-        const keyName = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+        let keyName = e.key;
+        // 特殊キーの場合
+        if (keyName === 'Escape') {
+          input.value = input.defaultValue || '';
+          input.classList.remove('capturing');
+          document.removeEventListener('keydown', handleKeyDown);
+          document.removeEventListener('keyup', handleKeyUp);
+          return;
+        } else if (keyName.length === 1) {
+          keyName = keyName.toUpperCase();
+        }
         keys.push(keyName);
       }
       
-      if (keys.length > 1 || (keys.length === 1 && keys[0] !== 'Escape')) {
-        const shortcut = keys.join('+');
-        input.value = shortcut;
-        input.classList.remove('capturing');
-        
-        // ホットキーを更新
-        ipcRenderer.send('update-hotkey', { key, shortcut });
-        ipcRenderer.once('hotkey-updated', () => {
-          this.updateHelpText();
-        });
-        
-        document.removeEventListener('keydown', handleKeyDown);
-      } else if (keys[0] === 'Escape') {
-        input.value = input.defaultValue || '';
-        input.classList.remove('capturing');
-        document.removeEventListener('keydown', handleKeyDown);
+      // リアルタイムでプレビューを更新
+      if (keys.length > 0) {
+        capturedKeys = keys;
+        input.value = keys.join('+');
+      }
+    };
+    
+    const handleKeyUp = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // すべての修飾キーが離されたときに確定
+      if (isCapturing && !e.metaKey && !e.altKey && !e.ctrlKey && !e.shiftKey) {
+        if (capturedKeys.length > 1 || (capturedKeys.length === 1 && !['Cmd', 'Option', 'Ctrl', 'Shift'].includes(capturedKeys[0]))) {
+          const shortcut = capturedKeys.join('+');
+          input.value = shortcut;
+          input.classList.remove('capturing');
+          
+          // ホットキーを更新
+          ipcRenderer.send('update-hotkey', { key, shortcut });
+          ipcRenderer.once('hotkey-updated', () => {
+            this.updateHelpText();
+          });
+          
+          document.removeEventListener('keydown', handleKeyDown);
+          document.removeEventListener('keyup', handleKeyUp);
+        }
+        isCapturing = false;
       }
     };
     
     document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
   }
 
   // 設定画面を閉じる
@@ -613,10 +645,17 @@ class SuperwhisperLauncherRenderer {
     const cancelBtn = content.querySelector('#cancelBtn');
     
     let capturedHotkey = '';
+    let capturedKeys = [];
+    let isCapturing = false;
     
     const handleKeyDown = (e) => {
       e.preventDefault();
       e.stopPropagation();
+      
+      if (!isCapturing) {
+        isCapturing = true;
+        capturedKeys = [];
+      }
       
       const keys = [];
       if (e.metaKey) keys.push('Cmd');
@@ -625,31 +664,55 @@ class SuperwhisperLauncherRenderer {
       if (e.shiftKey) keys.push('Shift');
       
       if (e.key && e.key !== 'Meta' && e.key !== 'Alt' && e.key !== 'Control' && e.key !== 'Shift') {
-        const keyName = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+        let keyName = e.key;
+        if (keyName === 'Escape') {
+          // Escapeでキャンセル
+          document.removeEventListener('keydown', handleKeyDown);
+          document.removeEventListener('keyup', handleKeyUp);
+          modal.remove();
+          return;
+        } else if (keyName.length === 1) {
+          keyName = keyName.toUpperCase();
+        }
         keys.push(keyName);
       }
       
-      if (keys.length > 1) {
-        capturedHotkey = keys.join('+');
+      // リアルタイムでプレビューを更新
+      if (keys.length > 0) {
+        capturedKeys = keys;
+        const shortcut = keys.join('+');
         
         // ASCII文字のみかチェック
-        if (!/^[\x00-\x7F]+$/.test(capturedHotkey)) {
+        if (!/^[\x00-\x7F]+$/.test(shortcut)) {
           input.value = '無効なキーの組み合わせです';
           saveBtn.disabled = true;
           saveBtn.style.opacity = '0.5';
           return;
         }
         
-        input.value = capturedHotkey;
+        input.value = shortcut;
+        capturedHotkey = shortcut;
         saveBtn.disabled = false;
         saveBtn.style.opacity = '1';
       }
     };
     
+    const handleKeyUp = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // すべての修飾キーが離されたときに確定
+      if (isCapturing && !e.metaKey && !e.altKey && !e.ctrlKey && !e.shiftKey) {
+        isCapturing = false;
+      }
+    };
+    
     document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
     
     cancelBtn.onclick = () => {
       document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyUp);
       modal.remove();
     };
     
@@ -658,6 +721,7 @@ class SuperwhisperLauncherRenderer {
         ipcRenderer.send('update-mode-hotkey', modeKey, capturedHotkey);
         this.showNotification('ホットキーを設定しました', 'success');
         document.removeEventListener('keydown', handleKeyDown);
+        document.removeEventListener('keyup', handleKeyUp);
         modal.remove();
         this.renderIconSettings();
       }
@@ -666,6 +730,7 @@ class SuperwhisperLauncherRenderer {
     modal.onclick = (e) => {
       if (e.target === modal) {
         document.removeEventListener('keydown', handleKeyDown);
+        document.removeEventListener('keyup', handleKeyUp);
         modal.remove();
       }
     };
