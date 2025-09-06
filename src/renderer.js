@@ -329,19 +329,36 @@ class SuperwhisperLauncherRenderer {
       if (e.ctrlKey) keys.push('Ctrl');
       if (e.shiftKey) keys.push('Shift');
       
-      // メイン文字キーを追加
-      if (e.key && e.key !== 'Meta' && e.key !== 'Alt' && e.key !== 'Control' && e.key !== 'Shift') {
-        let keyName = e.key;
-        // 特殊キーの場合
-        if (keyName === 'Escape') {
+      // メイン文字キーを追加（e.codeを使用してOptionによる文字変換を回避）
+      if (e.code && !e.code.startsWith('Meta') && !e.code.startsWith('Alt') && 
+          !e.code.startsWith('Control') && !e.code.startsWith('Shift')) {
+        
+        if (e.key === 'Escape') {
           input.value = input.defaultValue || '';
           input.classList.remove('capturing');
           document.removeEventListener('keydown', handleKeyDown);
           document.removeEventListener('keyup', handleKeyUp);
           return;
-        } else if (keyName.length === 1) {
-          keyName = keyName.toUpperCase();
         }
+        
+        // e.codeから実際のキー名を取得（Option変換を無視）
+        let keyName = e.code;
+        if (keyName.startsWith('Key')) {
+          keyName = keyName.substring(3); // "KeyA" -> "A"
+        } else if (keyName.startsWith('Digit')) {
+          keyName = keyName.substring(5); // "Digit1" -> "1"
+        } else if (keyName === 'Space') {
+          keyName = 'Space';
+        } else if (keyName.startsWith('Arrow')) {
+          keyName = keyName.substring(5); // "ArrowUp" -> "Up"
+        } else {
+          // その他の特殊キーはe.keyを使用
+          keyName = e.key;
+          if (keyName.length === 1) {
+            keyName = keyName.toUpperCase();
+          }
+        }
+        
         keys.push(keyName);
       }
       
@@ -663,17 +680,35 @@ class SuperwhisperLauncherRenderer {
       if (e.ctrlKey) keys.push('Ctrl');
       if (e.shiftKey) keys.push('Shift');
       
-      if (e.key && e.key !== 'Meta' && e.key !== 'Alt' && e.key !== 'Control' && e.key !== 'Shift') {
-        let keyName = e.key;
-        if (keyName === 'Escape') {
+      if (e.code && !e.code.startsWith('Meta') && !e.code.startsWith('Alt') && 
+          !e.code.startsWith('Control') && !e.code.startsWith('Shift')) {
+        
+        if (e.key === 'Escape') {
           // Escapeでキャンセル
           document.removeEventListener('keydown', handleKeyDown);
           document.removeEventListener('keyup', handleKeyUp);
           modal.remove();
           return;
-        } else if (keyName.length === 1) {
-          keyName = keyName.toUpperCase();
         }
+        
+        // e.codeから実際のキー名を取得（Option変換を無視）
+        let keyName = e.code;
+        if (keyName.startsWith('Key')) {
+          keyName = keyName.substring(3); // "KeyA" -> "A"
+        } else if (keyName.startsWith('Digit')) {
+          keyName = keyName.substring(5); // "Digit1" -> "1"
+        } else if (keyName === 'Space') {
+          keyName = 'Space';
+        } else if (keyName.startsWith('Arrow')) {
+          keyName = keyName.substring(5); // "ArrowUp" -> "Up"
+        } else {
+          // その他の特殊キーはe.keyを使用
+          keyName = e.key;
+          if (keyName.length === 1) {
+            keyName = keyName.toUpperCase();
+          }
+        }
+        
         keys.push(keyName);
       }
       
