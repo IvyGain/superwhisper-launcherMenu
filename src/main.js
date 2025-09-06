@@ -13,6 +13,7 @@ class SuperwhisperLauncher {
     this.loadModesTimeout = null;
     this.fileWatcher = null;
     this.registeredModeHotkeys = [];
+    this.numberShortcutsRegistered = false;
     
     this.init();
   }
@@ -171,13 +172,8 @@ class SuperwhisperLauncher {
       });
 
       // モード直接起動のホットキー（Cmd+1-9のみ、オン/オフ設定を確認）
-      if (this.store.get('hotkeys.numberShortcuts', true)) {
-        for (let i = 1; i <= 9; i++) {
-          globalShortcut.register(`CommandOrControl+${i}`, () => {
-            this.launchModeByIndex(i - 1);
-          });
-        }
-      }
+      const numberShortcutsEnabled = this.store.get('hotkeys.numberShortcuts', true);
+      this.updateNumberShortcuts(numberShortcutsEnabled);
 
       // カスタムモードホットキー
       this.setupModeHotkeys();
@@ -261,32 +257,21 @@ class SuperwhisperLauncher {
       
       const { exec } = require('child_process');
       
-      // より確実なAppleScriptを使用
+      // シンプルで確実なAppleScript
       const script = `
-        tell application "Superwhisper"
-          activate
-        end tell
-        
-        delay 0.3
-        
+        tell application "Superwhisper" to activate
+        delay 0.1
         tell application "System Events"
-          tell process "Superwhisper"
-            -- メニューからProcessAgainを実行
-            try
-              click menu item "Process Again" of menu "Edit" of menu bar 1
-            on error
-              -- メニューが見つからない場合はキーボードショートカットを使用
-              keystroke "r" using {command down, shift down}
-            end try
-          end tell
+          -- Cmd+Shift+Rを送信
+          keystroke "r" using {command down, shift down}
         end tell
       `;
       
-      exec(`osascript -e '${script.replace(/'/g, "'\"'\"'")}'`, (error, stdout, stderr) => {
+      exec(`osascript -e '${script}'`, (error, stdout, stderr) => {
         if (error) {
           console.error('ProcessAgain実行エラー:', error);
-          // 最終フォールバック
-          this.sendProcessAgainShortcut();
+          // より直接的なフォールバック
+          this.sendDirectProcessAgain();
         } else {
           console.log('ProcessAgainを実行しました');
         }
@@ -294,30 +279,38 @@ class SuperwhisperLauncher {
       
     } catch (error) {
       console.error('ProcessAgain起動エラー:', error);
-      this.sendProcessAgainShortcut();
+      this.sendDirectProcessAgain();
     }
   }
 
-  // ProcessAgainのキーボードショートカットを送信（フォールバック）
-  sendProcessAgainShortcut() {
+  // ProcessAgainの直接実行（フォールバック）
+  sendDirectProcessAgain() {
     const { exec } = require('child_process');
     
-    // Superwhisperを最前面に持ってきてからショートカットを送信
-    const script = `
-      tell application "Superwhisper" to activate
-      delay 0.2
-      tell application "System Events"
-        keystroke "r" using {command down, shift down}
-      end tell
-    `;
+    console.log('フォールバック: 直接キーストローク送信');
     
-    exec(`osascript -e '${script.replace(/'/g, "'\"'\"'")}'`, (error) => {
+    // 最もシンプルな方法でキーストロークを送信
+    const script = `tell application "System Events" to keystroke "r" using {command down, shift down}`;
+    
+    exec(`osascript -e '${script}'`, (error) => {
       if (error) {
         console.error('フォールバック実行エラー:', error);
+        // 最後の手段：robotjsがインストールされていれば使用
+        this.tryRobotJS();
       } else {
-        console.log('フォールバックでProcessAgainを実行しました');
+        console.log('フォールバックでProcessAgainキーストロークを送信しました');
       }
     });
+  }
+
+  // 最終手段（通常は実行されない）
+  tryRobotJS() {
+    try {
+      // robotjsは通常インストールされていないので、ログのみ
+      console.log('ProcessAgain実行に失敗しました。手動でCmd+Shift+Rを押してください。');
+    } catch (error) {
+      console.log('ProcessAgain実行に失敗しました。手動でCmd+Shift+Rを押してください。');
+    }
   }
 
   // モードフォルダの監視
@@ -586,11 +579,43 @@ class SuperwhisperLauncher {
 
     ipcMain.on('update-number-shortcuts', (event, enabled) => {
       this.store.set('hotkeys.numberShortcuts', enabled);
-      // ショートカットを再登録
-      globalShortcut.unregisterAll();
-      this.setupGlobalShortcuts();
       console.log('Cmd+1-9ショートカット設定を更新:', enabled);
+      
+      // 数字ショートカットのみを個別に管理
+      this.updateNumberShortcuts(enabled);
     });
+  }
+
+  // 数字ショートカットの個別管理
+  updateNumberShortcuts(enabled) {
+    try {
+      // 既存の数字ショートカットを解除
+      if (this.numberShortcutsRegistered) {
+        for (let i = 1; i <= 9; i++) {
+          try {
+            globalShortcut.unregister(`CommandOrControl+${i}`);
+          } catch (e) {
+            console.log(`Cmd+${i}の解除でエラー:`, e);
+          }
+        }
+        this.numberShortcutsRegistered = false;
+      }
+
+      // 有効な場合は登録
+      if (enabled) {
+        for (let i = 1; i <= 9; i++) {
+          globalShortcut.register(`CommandOrControl+${i}`, () => {
+            this.launchModeByIndex(i - 1);
+          });
+        }
+        this.numberShortcutsRegistered = true;
+        console.log('Cmd+1-9ショートカットを登録しました');
+      } else {
+        console.log('Cmd+1-9ショートカットを無効にしました');
+      }
+    } catch (error) {
+      console.error('数字ショートカット更新エラー:', error);
+    }
   }
 
   // アプリケーションイベントハンドラの設定
