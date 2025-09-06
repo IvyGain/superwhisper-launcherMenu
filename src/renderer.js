@@ -158,6 +158,9 @@ class SuperwhisperLauncherRenderer {
     
     // イベントリスナーを設定
     this.setupTileEventListeners();
+    
+    // 番号表示の状態を更新
+    this.updateShortcutsHint();
   }
 
   // タイルのイベントリスナー設定
@@ -255,6 +258,16 @@ class SuperwhisperLauncherRenderer {
           shortcutsHintElement.style.display = 'none';
         }
       }
+      
+      // タイルの番号表示も同期して更新
+      const modeShortcuts = document.querySelectorAll('.mode-shortcut');
+      modeShortcuts.forEach(shortcut => {
+        if (enabled) {
+          shortcut.style.display = 'block';
+        } else {
+          shortcut.style.display = 'none';
+        }
+      });
     });
   }
 
