@@ -258,11 +258,11 @@ body {
 
 /* モードタイル内の要素 */
 .mode-icon {
-  font-size: 42px;
-  margin-bottom: 6px;
+  font-size: 46px;
+  margin-bottom: 4px;
   line-height: 1;
   flex-shrink: 0;
-  height: 48px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
