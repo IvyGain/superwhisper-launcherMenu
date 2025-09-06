@@ -96,34 +96,69 @@ body {
 
 /* ヘッダー */
 .header {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 80px 1fr 80px;
   align-items: center;
-  padding: 12px 16px;
-  min-height: 44px;
+  padding: 8px 12px;
+  min-height: 40px;
   flex-shrink: 0;
   border-bottom: 1px solid var(--color-border);
   background: linear-gradient(to bottom, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
   backdrop-filter: blur(10px);
+  -webkit-app-region: drag;
 }
 
-.drag-area {
+/* ウィンドウコントロール */
+.window-controls {
   display: flex;
+  gap: 8px;
+  -webkit-app-region: no-drag;
+}
+
+.window-btn {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.close-btn {
+  background: #ff5f57;
+}
+
+.minimize-btn {
+  background: #ffbd2e;
+}
+
+.zoom-btn {
+  background: #28ca42;
+}
+
+.window-btn:hover {
+  transform: scale(1.1);
+  opacity: 0.8;
+}
+
+/* ヘッダー中央 */
+.header-center {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
-  flex: 1;
-  -webkit-app-region: drag;
-  cursor: move;
+  gap: 2px;
+  justify-self: center;
 }
 
 .app-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .app-icon {
-  font-size: 16px;
+  font-size: 14px;
   filter: brightness(1.1) contrast(1.1);
 }
 
@@ -135,6 +170,13 @@ body {
   opacity: 0.9;
 }
 
+/* ヘッダー右側 */
+.header-right {
+  display: flex;
+  justify-content: flex-end;
+  -webkit-app-region: no-drag;
+}
+
 /* コントロール */
 .controls {
   display: flex;
@@ -143,14 +185,14 @@ body {
 }
 
 .shortcuts-hint {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--color-text-secondary);
-  opacity: 0.7;
+  opacity: 0.6;
   font-weight: 500;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 4px 8px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* ボタン共通 */
@@ -164,43 +206,26 @@ body {
   font-size: var(--font-size-lg);
 }
 
-.controls {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  -webkit-app-region: no-drag;
-}
-
-.settings-btn,
-.close-btn {
+.settings-btn {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 6px;
+  padding: 4px;
   border-radius: 4px;
   transition: all 0.15s ease;
-  font-size: 14px;
+  font-size: 12px;
   opacity: 0.6;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.settings-btn:hover,
-.close-btn:hover {
+.settings-btn:hover {
   opacity: 1;
   background: rgba(255, 255, 255, 0.1);
   transform: scale(1.05);
-}
-
-.close-btn {
-  color: var(--color-error);
-}
-
-.close-btn:hover {
-  background: rgba(255, 69, 58, 0.15);
 }
 
 /* モードグリッド */

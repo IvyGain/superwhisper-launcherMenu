@@ -9,16 +9,22 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="drag-area">
+            <div class="window-controls">
+                <button class="window-btn close-btn" onclick="closeApp()"></button>
+                <button class="window-btn minimize-btn"></button>
+                <button class="window-btn zoom-btn"></button>
+            </div>
+            
+            <div class="header-center">
                 <div class="app-info">
                     <span class="app-icon">🎤</span>
-                    <span class="app-title">SW Launcher</span>
+                    <span class="app-title">Superwhisper Launcher</span>
                 </div>
                 <div class="shortcuts-hint">Cmd+1-9 で直接起動</div>
             </div>
-            <div class="controls">
+            
+            <div class="header-right">
                 <button class="settings-btn" onclick="openSettings()">⚙️</button>
-                <button class="close-btn" onclick="closeApp()">×</button>
             </div>
         </div>
         
