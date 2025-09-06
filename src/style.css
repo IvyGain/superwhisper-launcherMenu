@@ -258,11 +258,11 @@ body {
 
 /* モードタイル内の要素 */
 .mode-icon {
-  font-size: 46px;
+  font-size: 48px;
   margin-bottom: 4px;
   line-height: 1;
   flex-shrink: 0;
-  height: 52px;
+  height: 54px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -945,6 +945,46 @@ body {
     --color-border: #444444;
     --color-border-secondary: #555555;
   }
+}
+
+/* リサイズハンドル */
+.resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, transparent 50%, rgba(255, 255, 255, 0.1) 50%);
+  cursor: nw-resize;
+  -webkit-app-region: no-drag;
+  z-index: 1000;
+}
+
+.resize-handle::before {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 3px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  box-shadow: 
+    -5px 0 0 rgba(255, 255, 255, 0.2),
+    0 -5px 0 rgba(255, 255, 255, 0.2),
+    -5px -5px 0 rgba(255, 255, 255, 0.15);
+}
+
+.resize-handle:hover {
+  background: linear-gradient(135deg, transparent 45%, rgba(255, 255, 255, 0.2) 45%);
+}
+
+.resize-handle:hover::before {
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 
+    -5px 0 0 rgba(255, 255, 255, 0.4),
+    0 -5px 0 rgba(255, 255, 255, 0.4),
+    -5px -5px 0 rgba(255, 255, 255, 0.3);
 }
 
 /* ユーティリティクラス */

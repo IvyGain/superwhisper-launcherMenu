@@ -519,11 +519,15 @@ class SuperwhisperLauncher {
   setupIpcHandlers() {
     // ショートカット設定の更新
     ipcMain.on('update-hotkey', (event, { key, shortcut }) => {
-      this.store.set(`hotkeys.${key}`, shortcut);
-      // ショートカットを再登録
-      globalShortcut.unregisterAll();
-      this.setupGlobalShortcuts();
-      event.reply('hotkey-updated', { key, shortcut });
+      try {
+        this.store.set(`hotkeys.${key}`, shortcut);
+        // 個別にホットキーを再登録（全体を再登録しない）
+        this.updateSpecificHotkey(key, shortcut);
+        event.reply('hotkey-updated', { key, shortcut });
+      } catch (error) {
+        console.error('ホットキー更新エラー:', error);
+        event.reply('hotkey-error', { key, error: error.message });
+      }
     });
 
     // 現在のホットキー設定を取得
@@ -584,6 +588,38 @@ class SuperwhisperLauncher {
       // 数字ショートカットのみを個別に管理
       this.updateNumberShortcuts(enabled);
     });
+  }
+
+  // 特定のホットキーを更新
+  updateSpecificHotkey(key, shortcut) {
+    try {
+      // 既存のホットキーを解除
+      const oldShortcut = this.store.get(`hotkeys.${key}`, '');
+      if (oldShortcut) {
+        const oldElectronShortcut = oldShortcut
+          .replace('Option', 'Alt')
+          .replace('Cmd', 'CommandOrControl');
+        if (globalShortcut.isRegistered(oldElectronShortcut)) {
+          globalShortcut.unregister(oldElectronShortcut);
+        }
+      }
+      
+      // 新しいホットキーを登録
+      if (key === 'launcher') {
+        this.registerShortcut(shortcut, () => {
+          this.showWindow();
+        });
+      } else if (key === 'processAgain') {
+        this.registerShortcut(shortcut, () => {
+          this.launchProcessAgain();
+        });
+      }
+      
+      console.log(`ホットキー更新成功: ${key} -> ${shortcut}`);
+    } catch (error) {
+      console.error(`ホットキー更新エラー: ${key}`, error);
+      throw error;
+    }
   }
 
   // 数字ショートカットの個別管理

@@ -22,10 +22,12 @@ class SuperwhisperLauncherRenderer {
       document.addEventListener('DOMContentLoaded', () => {
         this.requestModes();
         this.setupEventListeners();
+        this.updateHelpText();
       });
     } else {
       this.requestModes();
       this.setupEventListeners();
+      this.updateHelpText();
     }
     
     this.setupIpcListeners();
@@ -227,6 +229,18 @@ class SuperwhisperLauncherRenderer {
     this.elements.settingsModal.style.display = 'flex';
   }
 
+  // ヘルプテキストの更新
+  updateHelpText() {
+    ipcRenderer.send('get-hotkeys');
+    ipcRenderer.once('current-hotkeys', (event, hotkeys) => {
+      const helpTextElement = document.getElementById('helpText');
+      if (helpTextElement) {
+        helpTextElement.textContent = 
+          `クリックでモード起動 • ドラッグ&ドロップで順序変更 • ESCで閉じる • ${hotkeys.launcher}/Cmd+Shift+Wで再表示`;
+      }
+    });
+  }
+
   // 現在のホットキー設定を読み込み
   loadCurrentHotkeys() {
     ipcRenderer.send('get-hotkeys');
@@ -319,6 +333,9 @@ class SuperwhisperLauncherRenderer {
         
         // ホットキーを更新
         ipcRenderer.send('update-hotkey', { key, shortcut });
+        ipcRenderer.once('hotkey-updated', () => {
+          this.updateHelpText();
+        });
         
         document.removeEventListener('keydown', handleKeyDown);
       } else if (keys[0] === 'Escape') {
