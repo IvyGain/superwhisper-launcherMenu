@@ -23,11 +23,13 @@ class SuperwhisperLauncherRenderer {
         this.requestModes();
         this.setupEventListeners();
         this.updateHelpText();
+        this.updateShortcutsHint();
       });
     } else {
       this.requestModes();
       this.setupEventListeners();
       this.updateHelpText();
+      this.updateShortcutsHint();
     }
     
     this.setupIpcListeners();
@@ -241,6 +243,21 @@ class SuperwhisperLauncherRenderer {
     });
   }
 
+  // ショートカットヒントの更新
+  updateShortcutsHint() {
+    ipcRenderer.send('get-number-shortcuts-setting');
+    ipcRenderer.once('current-number-shortcuts-setting', (event, enabled) => {
+      const shortcutsHintElement = document.getElementById('shortcutsHint');
+      if (shortcutsHintElement) {
+        if (enabled) {
+          shortcutsHintElement.style.display = 'block';
+        } else {
+          shortcutsHintElement.style.display = 'none';
+        }
+      }
+    });
+  }
+
   // 現在のホットキー設定を読み込み
   loadCurrentHotkeys() {
     ipcRenderer.send('get-hotkeys');
@@ -274,6 +291,7 @@ class SuperwhisperLauncherRenderer {
         const enabled = e.target.checked;
         ipcRenderer.send('update-number-shortcuts', enabled);
         this.updateToggleLabel(toggle, enabled);
+        this.updateShortcutsHint();
       });
     }
   }
