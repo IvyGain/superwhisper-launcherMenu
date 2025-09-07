@@ -251,62 +251,112 @@ class SuperwhisperLauncher {
     try {
       console.log('ProcessAgainを起動中...');
       
-      const { exec } = require('child_process');
-      
-      // シンプルで確実なAppleScript
-      const script = `
-        tell application "Superwhisper" to activate
-        delay 0.1
-        tell application "System Events"
-          -- Cmd+Shift+Rを送信
-          keystroke "r" using {command down, shift down}
-        end tell
-      `;
-      
-      exec(`osascript -e '${script}'`, (error, stdout, stderr) => {
-        if (error) {
-          console.error('ProcessAgain実行エラー:', error);
-          // より直接的なフォールバック
-          this.sendDirectProcessAgain();
-        } else {
-          console.log('ProcessAgainを実行しました');
+      // 方法1: Alfred-SuperWhisperワークフローを使用（最も推奨）
+      this.tryAlfredProcessAgain().then(success => {
+        if (!success) {
+          console.log('Alfred方式が失敗、GUI自動化にフォールバック');
+          this.tryGUIProcessAgain();
         }
       });
       
     } catch (error) {
       console.error('ProcessAgain起動エラー:', error);
-      this.sendDirectProcessAgain();
+      this.tryGUIProcessAgain();
     }
   }
 
-  // ProcessAgainの直接実行（フォールバック）
-  sendDirectProcessAgain() {
-    const { exec } = require('child_process');
-    
-    console.log('フォールバック: 直接キーストローク送信');
-    
-    // 最もシンプルな方法でキーストロークを送信
-    const script = `tell application "System Events" to keystroke "r" using {command down, shift down}`;
-    
-    exec(`osascript -e '${script}'`, (error) => {
-      if (error) {
-        console.error('フォールバック実行エラー:', error);
-        // 最後の手段：robotjsがインストールされていれば使用
-        this.tryRobotJS();
-      } else {
-        console.log('フォールバックでProcessAgainキーストロークを送信しました');
-      }
-    });
-  }
-
-  // 最終手段（通常は実行されない）
-  tryRobotJS() {
+  // Alfred-SuperWhisperワークフローを使用したProcessAgain
+  async tryAlfredProcessAgain() {
     try {
-      // robotjsは通常インストールされていないので、ログのみ
-      console.log('ProcessAgain実行に失敗しました。手動でCmd+Shift+Rを押してください。');
+      const { exec } = require('child_process');
+      
+      // Alfred Workflowを使用したProcessAgain実行
+      const alfredScript = `
+        tell application id "com.runningwithcrayons.Alfred"
+          to run trigger "sw" in workflow "com.ognistik.alfred-superwhisper" 
+          with argument "processLast"
+        end tell
+      `;
+      
+      return new Promise((resolve) => {
+        exec(`osascript -e '${alfredScript}'`, (error, stdout, stderr) => {
+          if (error) {
+            console.log('Alfred Workflow方式が利用できません:', error.message);
+            resolve(false);
+          } else {
+            console.log('Alfred WorkflowでProcessAgainを実行しました');
+            resolve(true);
+          }
+        });
+      });
+      
     } catch (error) {
-      console.log('ProcessAgain実行に失敗しました。手動でCmd+Shift+Rを押してください。');
+      console.log('Alfred Workflow実行エラー:', error);
+      return false;
     }
+  }
+
+  // GUI自動化によるProcessAgain（フォールバック）
+  tryGUIProcessAgain() {
+    try {
+      const { exec } = require('child_process');
+      
+      // 改良されたGUI自動化スクリプト
+      const guiScript = `
+        tell application "SuperWhisper"
+          activate
+        end tell
+        delay 0.3
+        
+        tell application "System Events"
+          tell process "SuperWhisper"
+            set frontmost to true
+            
+            -- メニューバーからProcess Againを選択を試行
+            try
+              click menu item "Process Again" of menu "Edit" of menu bar 1
+              return true
+            on error
+              try
+                -- キーボードショートカット Cmd+Shift+R を試行
+                keystroke "r" using {command down, shift down}
+                return true
+              on error
+                try
+                  -- 代替ショートカット Cmd+R を試行
+                  keystroke "r" using {command down}
+                  return true
+                on error
+                  return false
+                end try
+              end try
+            end try
+          end tell
+        end tell
+      `;
+      
+      exec(`osascript -e '${guiScript}'`, (error, stdout, stderr) => {
+        if (error) {
+          console.error('GUI自動化ProcessAgain実行エラー:', error);
+          this.showProcessAgainError();
+        } else {
+          console.log('GUI自動化でProcessAgainを実行しました');
+        }
+      });
+      
+    } catch (error) {
+      console.error('GUI ProcessAgain実行エラー:', error);
+      this.showProcessAgainError();
+    }
+  }
+
+  // ProcessAgain実行エラーの通知
+  showProcessAgainError() {
+    console.log('ProcessAgain実行に失敗しました。以下を確認してください:');
+    console.log('1. SuperWhisperが起動していること');
+    console.log('2. アクセシビリティ権限が付与されていること'); 
+    console.log('3. Alfred Powerpack + alfred-superwhisperワークフローがインストールされていること（推奨）');
+    console.log('手動でSuperWhisperのメニュー > Edit > Process Againを選択してください');
   }
 
   // モードフォルダの監視
