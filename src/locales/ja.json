@@ -1,0 +1,55 @@
+{
+  "app": {
+    "title": "Superwhisper Launcher",
+    "loading": "モードを読み込み中...",
+    "noModes": "モードが見つかりません",
+    "noModesDescription": "Superwhisperのmodesフォルダにモードファイルを配置してください。"
+  },
+  "header": {
+    "shortcutsHint": "Cmd+1-9 で直接起動"
+  },
+  "footer": {
+    "helpText": "クリックでモード起動 • ドラッグ&ドロップで順序変更 • ESCで閉じる • Option+Vで再表示"
+  },
+  "settings": {
+    "title": "設定",
+    "shortcuts": {
+      "title": "⌨️ ショートカット設定",
+      "launcher": "ランチャーを開く:",
+      "processAgain": "ProcessAgain:",
+      "numberShortcuts": "Cmd+1-9ショートカット:",
+      "enabled": "有効",
+      "change": "変更",
+      "fixed": {
+        "esc": "ランチャーを閉じる"
+      }
+    },
+    "icons": {
+      "title": "🎨 アイコン＆ホットキー設定",
+      "setHotkey": "ホットキー設定",
+      "removeHotkey": "削除"
+    },
+    "language": {
+      "title": "🌐 言語設定",
+      "current": "現在の言語:",
+      "japanese": "日本語",
+      "english": "English"
+    }
+  },
+  "tray": {
+    "title": "Superwhisper Launcher",
+    "showLauncher": "ランチャーを開く",
+    "reloadModes": "モードを再読み込み",
+    "settings": "設定",
+    "quit": "終了"
+  },
+  "hotkey": {
+    "pressKey": "キーを押してください...",
+    "capturing": "キー入力を待機中..."
+  },
+  "messages": {
+    "hotkeyUpdated": "ホットキーが更新されました",
+    "hotkeyError": "ホットキーの更新に失敗しました",
+    "processAgainError": "ProcessAgainの実行に失敗しました"
+  }
+}

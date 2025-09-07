@@ -782,6 +782,56 @@ body {
   border-color: var(--color-primary);
 }
 
+/* 言語設定 */
+.language-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.language-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--color-surface-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+}
+
+.language-item label {
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.language-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.language-select {
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  min-width: 120px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.language-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.language-select:hover {
+  background: var(--color-surface-hover);
+}
+
 .collapsible {
   border-top: 1px solid var(--color-border);
   margin-top: 16px;

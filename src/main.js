@@ -3,10 +3,12 @@ const path = require('path');
 const fs = require('fs');
 const chokidar = require('chokidar');
 const Store = require('electron-store');
+const I18n = require('./i18n');
 
 class SuperwhisperLauncher {
   constructor() {
     this.store = new Store();
+    this.i18n = new I18n();
     this.mainWindow = null;
     this.tray = null;
     this.modesData = [];
@@ -119,25 +121,25 @@ class SuperwhisperLauncher {
   createContextMenu() {
     return Menu.buildFromTemplate([
       {
-        label: 'Superwhisper Launcher',
+        label: this.i18n.t('tray.title'),
         enabled: false
       },
       { type: 'separator' },
       {
-        label: 'ランチャーを開く',
+        label: this.i18n.t('tray.showLauncher'),
         click: () => this.showWindow()
       },
       {
-        label: 'モードを再読み込み',
+        label: this.i18n.t('tray.reloadModes'),
         click: () => this.loadModes()
       },
       { type: 'separator' },
       {
-        label: '設定',
+        label: this.i18n.t('tray.settings'),
         click: () => this.openSettings()
       },
       {
-        label: '終了',
+        label: this.i18n.t('tray.quit'),
         click: () => app.quit()
       }
     ]);
@@ -633,6 +635,30 @@ class SuperwhisperLauncher {
       
       // 数字ショートカットのみを個別に管理
       this.updateNumberShortcuts(enabled);
+    });
+
+    // 言語設定関連
+    ipcMain.on('get-current-language', (event) => {
+      event.reply('current-language', this.i18n.getCurrentLanguage());
+    });
+
+    ipcMain.on('set-language', (event, language) => {
+      if (this.i18n.setLanguage(language)) {
+        // トレイメニューを更新
+        if (this.tray) {
+          const contextMenu = this.createContextMenu();
+          this.tray.setContextMenu(contextMenu);
+        }
+        event.reply('language-changed', language);
+      } else {
+        event.reply('language-error', 'Invalid language');
+      }
+    });
+
+    ipcMain.on('get-translations', (event) => {
+      const currentLang = this.i18n.getCurrentLanguage();
+      const translations = this.i18n.translations[currentLang] || {};
+      event.reply('translations', translations);
     });
   }
 

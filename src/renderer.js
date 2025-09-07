@@ -3,6 +3,8 @@ const { ipcRenderer } = require('electron');
 class SuperwhisperLauncherRenderer {
   constructor() {
     this.currentModes = [];
+    this.currentLanguage = 'ja';
+    this.translations = {};
     this.elements = {
       modesGrid: document.getElementById('modesGrid'),
       settingsModal: document.getElementById('settingsModal'),
@@ -20,12 +22,14 @@ class SuperwhisperLauncherRenderer {
   init() {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
+        this.initializeLanguage();
         this.requestModes();
         this.setupEventListeners();
         this.updateHelpText();
         this.updateShortcutsHint();
       });
     } else {
+      this.initializeLanguage();
       this.requestModes();
       this.setupEventListeners();
       this.updateHelpText();
@@ -84,12 +88,135 @@ class SuperwhisperLauncherRenderer {
     return Object.values(this.emojiCategories).flat();
   }
 
+  // 言語初期化
+  initializeLanguage() {
+    ipcRenderer.send('get-current-language');
+    ipcRenderer.send('get-translations');
+  }
+
+  // 翻訳関数
+  t(key) {
+    const keys = key.split('.');
+    let translation = this.translations;
+
+    for (const k of keys) {
+      if (translation && typeof translation === 'object') {
+        translation = translation[k];
+      } else {
+        return key;
+      }
+    }
+
+    return translation || key;
+  }
+
+  // UI更新
+  updateUI() {
+    // ヘッダー
+    const shortcutsHint = document.getElementById('shortcutsHint');
+    if (shortcutsHint) {
+      shortcutsHint.textContent = this.t('header.shortcutsHint');
+    }
+
+    // フッター
+    const helpText = document.getElementById('helpText');
+    if (helpText) {
+      helpText.textContent = this.t('footer.helpText');
+    }
+
+    // ローディングテキスト
+    const loadingText = document.getElementById('loadingText');
+    if (loadingText) {
+      loadingText.textContent = this.t('app.loading');
+    }
+
+    // 設定モーダル
+    const settingsTitle = document.getElementById('settingsTitle');
+    if (settingsTitle) {
+      settingsTitle.textContent = this.t('settings.title');
+    }
+
+    const shortcutSettingsTitle = document.getElementById('shortcutSettingsTitle');
+    if (shortcutSettingsTitle) {
+      shortcutSettingsTitle.textContent = this.t('settings.shortcuts.title');
+    }
+
+    const launcherLabel = document.getElementById('launcherLabel');
+    if (launcherLabel) {
+      launcherLabel.textContent = this.t('settings.shortcuts.launcher');
+    }
+
+    const processAgainLabel = document.getElementById('processAgainLabel');
+    if (processAgainLabel) {
+      processAgainLabel.textContent = this.t('settings.shortcuts.processAgain');
+    }
+
+    const numberShortcutsLabel = document.getElementById('numberShortcutsLabel');
+    if (numberShortcutsLabel) {
+      numberShortcutsLabel.textContent = this.t('settings.shortcuts.numberShortcuts');
+    }
+
+    const enabledLabel = document.getElementById('enabledLabel');
+    if (enabledLabel) {
+      enabledLabel.textContent = this.t('settings.shortcuts.enabled');
+    }
+
+    const escDescription = document.getElementById('escDescription');
+    if (escDescription) {
+      escDescription.textContent = '- ' + this.t('settings.shortcuts.fixed.esc');
+    }
+
+    const changeBtn1 = document.getElementById('changeBtn1');
+    if (changeBtn1) {
+      changeBtn1.textContent = this.t('settings.shortcuts.change');
+    }
+
+    const changeBtn2 = document.getElementById('changeBtn2');
+    if (changeBtn2) {
+      changeBtn2.textContent = this.t('settings.shortcuts.change');
+    }
+
+    const languageTitle = document.getElementById('languageTitle');
+    if (languageTitle) {
+      languageTitle.textContent = this.t('settings.language.title');
+    }
+
+    const currentLanguageLabel = document.getElementById('currentLanguageLabel');
+    if (currentLanguageLabel) {
+      currentLanguageLabel.textContent = this.t('settings.language.current');
+    }
+
+    const iconHotkeyTitle = document.getElementById('iconHotkeyTitle');
+    if (iconHotkeyTitle) {
+      iconHotkeyTitle.innerHTML = this.t('settings.icons.title') + ' <span class="collapse-arrow">▼</span>';
+    }
+  }
+
   // IPCリスナーの設定
   setupIpcListeners() {
     ipcRenderer.on('modes-updated', (event, modes) => {
       console.log('modes-updated: モード更新', modes);
       this.currentModes = modes;
       this.renderModes(modes);
+    });
+
+    // 言語関連
+    ipcRenderer.on('current-language', (event, language) => {
+      this.currentLanguage = language;
+      const languageSelect = document.getElementById('languageSelect');
+      if (languageSelect) {
+        languageSelect.value = language;
+      }
+    });
+
+    ipcRenderer.on('translations', (event, translations) => {
+      this.translations = translations;
+      this.updateUI();
+    });
+
+    ipcRenderer.on('language-changed', (event, language) => {
+      this.currentLanguage = language;
+      ipcRenderer.send('get-translations');
     });
   }
 
@@ -116,6 +243,26 @@ class SuperwhisperLauncherRenderer {
         this.closeSettings();
       }
     });
+
+    // 言語選択
+    document.addEventListener('DOMContentLoaded', () => {
+      const languageSelect = document.getElementById('languageSelect');
+      if (languageSelect) {
+        languageSelect.addEventListener('change', (e) => {
+          const selectedLanguage = e.target.value;
+          ipcRenderer.send('set-language', selectedLanguage);
+        });
+      }
+    });
+
+    // すでにDOMが読み込み済みの場合は直接設定
+    const languageSelect = document.getElementById('languageSelect');
+    if (languageSelect) {
+      languageSelect.addEventListener('change', (e) => {
+        const selectedLanguage = e.target.value;
+        ipcRenderer.send('set-language', selectedLanguage);
+      });
+    }
   }
 
   // モードデータの要求

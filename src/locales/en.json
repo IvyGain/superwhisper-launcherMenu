@@ -1,0 +1,55 @@
+{
+  "app": {
+    "title": "Superwhisper Launcher",
+    "loading": "Loading modes...",
+    "noModes": "No modes found",
+    "noModesDescription": "Please place mode files in the Superwhisper modes folder."
+  },
+  "header": {
+    "shortcutsHint": "Cmd+1-9 for direct launch"
+  },
+  "footer": {
+    "helpText": "Click to launch mode • Drag & drop to reorder • ESC to close • Option+V to reopen"
+  },
+  "settings": {
+    "title": "Settings",
+    "shortcuts": {
+      "title": "⌨️ Shortcut Settings",
+      "launcher": "Open Launcher:",
+      "processAgain": "ProcessAgain:",
+      "numberShortcuts": "Cmd+1-9 Shortcuts:",
+      "enabled": "Enabled",
+      "change": "Change",
+      "fixed": {
+        "esc": "Close launcher"
+      }
+    },
+    "icons": {
+      "title": "🎨 Icon & Hotkey Settings",
+      "setHotkey": "Set Hotkey",
+      "removeHotkey": "Remove"
+    },
+    "language": {
+      "title": "🌐 Language Settings",
+      "current": "Current Language:",
+      "japanese": "日本語",
+      "english": "English"
+    }
+  },
+  "tray": {
+    "title": "Superwhisper Launcher",
+    "showLauncher": "Show Launcher",
+    "reloadModes": "Reload Modes",
+    "settings": "Settings",
+    "quit": "Quit"
+  },
+  "hotkey": {
+    "pressKey": "Press a key...",
+    "capturing": "Waiting for key input..."
+  },
+  "messages": {
+    "hotkeyUpdated": "Hotkey updated successfully",
+    "hotkeyError": "Failed to update hotkey",
+    "processAgainError": "Failed to execute ProcessAgain"
+  }
+}

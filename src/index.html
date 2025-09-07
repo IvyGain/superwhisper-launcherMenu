@@ -32,7 +32,7 @@
         <div class="modes-grid" id="modesGrid">
             <div class="loading">
                 <div class="spinner"></div>
-                <p>モードを読み込み中...</p>
+                <p id="loadingText">モードを読み込み中...</p>
             </div>
         </div>
         
@@ -50,7 +50,7 @@
     <div class="modal" id="settingsModal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>設定</h2>
+                <h2 id="settingsTitle">設定</h2>
                 <button class="modal-close-btn" onclick="closeSettings()">
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -59,39 +59,53 @@
             </div>
             <div class="modal-body">
                 <div class="settings-section">
-                    <h3>⌨️ ショートカット設定</h3>
+                    <h3 id="shortcutSettingsTitle">⌨️ ショートカット設定</h3>
                     <div class="shortcut-settings">
                         <div class="shortcut-item">
-                            <label>ランチャーを開く:</label>
+                            <label id="launcherLabel">ランチャーを開く:</label>
                             <div class="shortcut-input-group">
                                 <input type="text" class="shortcut-input" value="Option+V" readonly>
-                                <button class="shortcut-change-btn">変更</button>
+                                <button class="shortcut-change-btn" id="changeBtn1">変更</button>
                             </div>
                         </div>
                         <div class="shortcut-item">
-                            <label>ProcessAgain:</label>
+                            <label id="processAgainLabel">ProcessAgain:</label>
                             <div class="shortcut-input-group">
                                 <input type="text" class="shortcut-input" value="Option+P" readonly>
-                                <button class="shortcut-change-btn">変更</button>
+                                <button class="shortcut-change-btn" id="changeBtn2">変更</button>
                             </div>
                         </div>
                         <div class="shortcut-item">
-                            <label>Cmd+1-9ショートカット:</label>
+                            <label id="numberShortcutsLabel">Cmd+1-9ショートカット:</label>
                             <div class="shortcut-input-group">
                                 <label class="toggle-switch">
                                     <input type="checkbox" id="numberShortcutsToggle" checked>
                                     <span class="toggle-slider"></span>
                                 </label>
-                                <span class="toggle-label">有効</span>
+                                <span class="toggle-label" id="enabledLabel">有効</span>
                             </div>
                         </div>
                         <div class="shortcut-fixed">
-                            <span class="key-badge">ESC</span> - ランチャーを閉じる
+                            <span class="key-badge">ESC</span> <span id="escDescription">- ランチャーを閉じる</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3 id="languageTitle">🌐 言語設定</h3>
+                    <div class="language-settings">
+                        <div class="language-item">
+                            <label id="currentLanguageLabel">現在の言語:</label>
+                            <div class="language-input-group">
+                                <select id="languageSelect" class="language-select">
+                                    <option value="ja">日本語</option>
+                                    <option value="en">English</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="settings-section collapsible">
-                    <h3 class="collapsible-header">🎨 アイコン＆ホットキー設定 <span class="collapse-arrow">▼</span></h3>
+                    <h3 class="collapsible-header" id="iconHotkeyTitle">🎨 アイコン＆ホットキー設定 <span class="collapse-arrow">▼</span></h3>
                     <div class="collapsible-content">
                         <div id="iconSettings" class="icon-settings">
                             <!-- アイコン＆ホットキー設定がここに動的に追加される -->
