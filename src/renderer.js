@@ -241,7 +241,7 @@ class SuperwhisperLauncherRenderer {
       const helpTextElement = document.getElementById('helpText');
       if (helpTextElement) {
         helpTextElement.textContent = 
-          `クリックでモード起動 • ドラッグ&ドロップで順序変更 • ESCで閉じる • ${hotkeys.launcher}/Cmd+Shift+Wで再表示`;
+          `クリックでモード起動 • ドラッグ&ドロップで順序変更 • ESCで閉じる • ${hotkeys.launcher}で再表示`;
       }
     });
   }
