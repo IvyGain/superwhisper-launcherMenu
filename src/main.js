@@ -4,6 +4,7 @@ const fs = require('fs');
 const chokidar = require('chokidar');
 const Store = require('electron-store');
 const I18n = require('./i18n');
+const { DEFAULT_ICONS, ICON_KEYWORDS } = require('./config/constants');
 
 class SuperwhisperLauncher {
   constructor() {
@@ -484,52 +485,19 @@ class SuperwhisperLauncher {
 
   // モードタイプに基づくデフォルトアイコン
   getDefaultIcon(type, modeName = '', prompt = '') {
-  // より詳細な絵文字マッピング
-  const iconMap = {
-    'message': '💬',
-    'email': '📧', 
-    'note': '📝',
-    'voice': '🎤',
-    'custom': '⚙️',
-    'chat': '💭',
-    'translation': '🌐',
-    'summary': '📋',
-    'code': '💻',
-    'creative': '🎨',
-    'writing': '✍️',
-    'business': '💼',
-    'social': '🤝',
-    'learning': '📚',
-    'music': '🎵',
-    'design': '🎨',
-    'presentation': '📊',
-    'meeting': '👥',
-    'planning': '📅',
-    'research': '🔍'
-  };
-  
-  // モード名やプロンプトから推測
-  if (modeName || prompt) {
-    const text = (modeName + ' ' + prompt).toLowerCase();
+    // モード名やプロンプトから推測
+    if (modeName || prompt) {
+      const text = (modeName + ' ' + prompt).toLowerCase();
+      
+      // キーワードマップから該当するアイコンを検索
+      for (const [icon, keywords] of Object.entries(ICON_KEYWORDS)) {
+        if (keywords.some(keyword => text.includes(keyword))) {
+          return icon;
+        }
+      }
+    }
     
-    if (text.includes('自己紹介') || text.includes('プロフィール')) return '👋';
-    if (text.includes('メール') || text.includes('mail')) return '📧';
-    if (text.includes('ブログ') || text.includes('記事')) return '📝';
-    if (text.includes('会議') || text.includes('ミーティング')) return '👥';
-    if (text.includes('プレゼン') || text.includes('発表')) return '📊';
-    if (text.includes('翻訳') || text.includes('translate')) return '🌐';
-    if (text.includes('要約') || text.includes('まとめ')) return '📋';
-    if (text.includes('コード') || text.includes('プログラム')) return '💻';
-    if (text.includes('デザイン') || text.includes('design')) return '🎨';
-    if (text.includes('音楽') || text.includes('music')) return '🎵';
-    if (text.includes('学習') || text.includes('勉強')) return '📚';
-    if (text.includes('計画') || text.includes('予定')) return '📅';
-    if (text.includes('検索') || text.includes('調査')) return '🔍';
-    if (text.includes('ビジネス') || text.includes('商談')) return '💼';
-    if (text.includes('クリエイティブ') || text.includes('創作')) return '✨';
-  }
-  
-    return iconMap[type] || '🎯';
+    return DEFAULT_ICONS[type] || '🎯';
   }
 
   // インデックスによるモード起動

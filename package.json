@@ -31,7 +31,10 @@
     ],
     "mac": {
       "category": "public.app-category.productivity",
-      "target": "dmg",
+      "target": {
+        "target": "dmg",
+        "arch": ["universal"]
+      },
       "icon": "assets/icon.icns",
       "identity": null,
       "hardenedRuntime": false
