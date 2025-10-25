@@ -323,14 +323,16 @@ class SuperwhisperLauncherRenderer {
     this.showNotification(`モード "${modeKey}" を起動しました`, 'success');
   }
 
-  // アプリを閉じる
+  // アプリを閉じる（バックグラウンドモードに切り替え）
   closeApp() {
-    if (window.require) {
-      const { remote } = window.require('electron');
-      if (remote && remote.getCurrentWindow) {
-        remote.getCurrentWindow().hide();
-      }
+    // 設定モーダルが開いている場合は、モーダルのみを閉じる
+    if (this.elements.settingsModal && this.elements.settingsModal.style.display === 'flex') {
+      this.closeSettings();
+      return;
     }
+    
+    // メインウィンドウを隠す（IPCを使用）
+    ipcRenderer.send('hide-window');
   }
 
   // 設定画面を開く
@@ -516,6 +518,18 @@ class SuperwhisperLauncherRenderer {
       if (isCapturing && !e.metaKey && !e.altKey && !e.ctrlKey && !e.shiftKey) {
         if (capturedKeys.length > 1 || (capturedKeys.length === 1 && !['Cmd', 'Option', 'Ctrl', 'Shift'].includes(capturedKeys[0]))) {
           const shortcut = capturedKeys.join('+');
+          
+          // Cmd+Qの入力を禁止
+          if (shortcut === 'Cmd+Q') {
+            input.value = '';
+            input.classList.remove('capturing');
+            this.showNotification('Cmd+Qは他のアプリの終了操作と競合するため設定できません', 'error');
+            document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('keyup', handleKeyUp);
+            isCapturing = false;
+            return;
+          }
+          
           input.value = shortcut;
           input.classList.remove('capturing');
           
@@ -859,6 +873,14 @@ class SuperwhisperLauncherRenderer {
         // ASCII文字のみかチェック
         if (!/^[\x00-\x7F]+$/.test(shortcut)) {
           input.value = '無効なキーの組み合わせです';
+          saveBtn.disabled = true;
+          saveBtn.style.opacity = '0.5';
+          return;
+        }
+        
+        // Cmd+Qの入力を禁止
+        if (shortcut === 'Cmd+Q') {
+          input.value = 'Cmd+Qは使用できません';
           saveBtn.disabled = true;
           saveBtn.style.opacity = '0.5';
           return;

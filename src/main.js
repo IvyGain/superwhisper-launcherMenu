@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, shell, globalShortcut, Tray, Menu, nativeIm
 const path = require('path');
 const fs = require('fs');
 const chokidar = require('chokidar');
+const { exec } = require('child_process');
 const Store = require('electron-store');
 const I18n = require('./i18n');
 const { DEFAULT_ICONS, ICON_KEYWORDS } = require('./config/constants');
@@ -228,6 +229,12 @@ class SuperwhisperLauncher {
       // 無効な文字をチェック（ASCII文字のみ許可）
       if (!/^[\x00-\x7F]+$/.test(shortcut)) {
         console.log(`無効なホットキーをスキップ: ${shortcut}`);
+        return false;
+      }
+      
+      // Cmd+Qの登録を禁止（他のアプリの終了操作と競合するため）
+      if (shortcut === 'Cmd+Q' || shortcut === 'CommandOrControl+Q') {
+        console.warn('Cmd+Qは他のアプリの終了操作と競合するため登録できません');
         return false;
       }
       
@@ -507,22 +514,183 @@ class SuperwhisperLauncher {
     }
   }
 
+  // Superwhisperウィンドウを最小化
+  minimizeSuperwhisperWindow() {
+    return new Promise((resolve) => {
+      // まず、実行中のプロセスを確認
+      this.debugSuperwhisperProcesses().then(() => {
+        const appleScript = `
+          tell application "System Events"
+            -- 複数のプロセス名パターンを試行
+            set processNames to {"SuperWhisper", "Superwhisper", "superwhisper", "SuperWhisper for macOS"}
+            set foundProcess to false
+            
+            repeat with processName in processNames
+              if exists process processName then
+                set foundProcess to true
+                log "プロセス発見: " & processName
+                
+                tell process processName
+                  try
+                    -- プロセスを前面に持ってくる
+                    set frontmost to true
+                    delay 0.3
+                    
+                    -- ウィンドウが存在するかチェック
+                    if (count of windows) > 0 then
+                      -- 最初のウィンドウを最小化
+                      tell window 1
+                        try
+                          -- Cmd+Mで最小化を試行
+                          keystroke "m" using command down
+                          log "Cmd+Mで最小化実行: " & processName
+                          delay 0.2
+                        on error
+                          try
+                            -- 代替手法: ウィンドウメニューから最小化
+                            click menu item "Minimize" of menu "Window" of menu bar 1
+                            log "メニューから最小化実行: " & processName
+                          on error
+                            try
+                              -- さらなる代替手法: ウィンドウを隠す
+                              set visible to false
+                              log "ウィンドウを隠しました: " & processName
+                            on error
+                              log "最小化に失敗: " & processName
+                            end try
+                          end try
+                        end try
+                      end tell
+                    else
+                      log "ウィンドウが見つかりません: " & processName
+                    end if
+                  on error errorMsg
+                    log "プロセス操作エラー: " & processName & " - " & errorMsg
+                  end try
+                end tell
+                exit repeat
+              end if
+            end repeat
+            
+            -- アプリケーション名でも試行
+            if not foundProcess then
+              try
+                tell application "SuperWhisper"
+                  if running then
+                    set foundProcess to true
+                    log "アプリケーション名でプロセス発見: SuperWhisper"
+                    tell application "System Events"
+                      tell process "SuperWhisper"
+                        if (count of windows) > 0 then
+                          tell window 1
+                            keystroke "m" using command down
+                            log "アプリケーション名経由で最小化実行"
+                          end tell
+                        end if
+                      end tell
+                    end tell
+                  end if
+                end tell
+              on error
+                log "アプリケーション名での検出に失敗"
+              end try
+            end if
+            
+            if not foundProcess then
+               log "SuperWhisperプロセスが見つかりません（試行したプロセス名: SuperWhisper, Superwhisper, superwhisper, SuperWhisper for macOS, アプリケーション名: SuperWhisper）"
+             end if
+          end tell
+        `;
+        
+        exec(`osascript -e '${appleScript}'`, (error, stdout, stderr) => {
+          if (error) {
+            console.log(`SuperWhisperウィンドウ最小化エラー: ${error.message}`);
+            if (stderr) {
+              console.log(`AppleScript stderr: ${stderr}`);
+            }
+          } else {
+            console.log('SuperWhisperウィンドウ最小化処理完了');
+            if (stdout) {
+              console.log(`AppleScript stdout: ${stdout}`);
+            }
+          }
+          // エラーが発生してもresolveして、メインフローを継続
+          resolve();
+        });
+      });
+    });
+  }
+
+  // デバッグ用：実行中のプロセスを確認
+  debugSuperwhisperProcesses() {
+    return new Promise((resolve) => {
+      const debugScript = `
+        tell application "System Events"
+          set allProcesses to name of every process
+          set superwhisperProcesses to {}
+          repeat with processName in allProcesses
+            if processName contains "whisper" or processName contains "Whisper" then
+              set end of superwhisperProcesses to processName
+            end if
+          end repeat
+          return superwhisperProcesses as string
+        end tell
+      `;
+      
+      exec(`osascript -e '${debugScript}'`, (error, stdout, stderr) => {
+        if (!error && stdout) {
+          console.log(`Whisper関連プロセス: ${stdout.trim()}`);
+        }
+        resolve();
+      });
+    });
+  }
+
   // モードの起動
   launchMode(modeKey) {
     try {
-      shell.openExternal(`superwhisper://mode?key=${modeKey}`);
+      console.log(`モード起動開始: ${modeKey}`);
       
-      setTimeout(() => {
-        shell.openExternal('superwhisper://record');
-      }, 500);
+      // モードが存在するかチェック
+      const mode = this.modesData.find(m => m.key === modeKey);
+      if (!mode) {
+        console.error(`モードが見つかりません: ${modeKey}`);
+        return;
+      }
       
-      console.log(`モード起動: ${modeKey}`);
+      console.log(`モード詳細:`, mode);
+      
+      // Superwhisperモード切り替え
+      shell.openExternal(`superwhisper://mode?key=${modeKey}`)
+        .then(async () => {
+          console.log(`モード切り替え成功: ${modeKey}`);
+          
+          // Superwhisperウィンドウを最小化
+          await this.minimizeSuperwhisperWindow();
+          
+          // Voice To Textモードの場合は少し長めの待機時間を設定
+          const delay = mode.name && mode.name.toLowerCase().includes('voice to text') ? 800 : 500;
+          console.log(`録音開始まで${delay}ms待機中...`);
+          
+          setTimeout(() => {
+            shell.openExternal('superwhisper://record')
+              .then(() => {
+                console.log(`録音開始成功: ${modeKey}`);
+              })
+              .catch((recordError) => {
+                console.error(`録音開始エラー: ${modeKey}`, recordError);
+              });
+          }, delay);
+        })
+        .catch((modeError) => {
+          console.error(`モード切り替えエラー: ${modeKey}`, modeError);
+        });
       
       if (this.mainWindow) {
         this.mainWindow.hide();
       }
     } catch (error) {
-      console.error('モード起動エラー:', error);
+      console.error(`モード起動エラー: ${modeKey}`, error);
     }
   }
 
@@ -627,6 +795,14 @@ class SuperwhisperLauncher {
       const currentLang = this.i18n.getCurrentLanguage();
       const translations = this.i18n.translations[currentLang] || {};
       event.reply('translations', translations);
+    });
+
+    // ウィンドウを隠す（バックグラウンドモード）
+    ipcMain.on('hide-window', (event) => {
+      if (this.mainWindow) {
+        this.mainWindow.hide();
+        console.log('ウィンドウをバックグラウンドモードに切り替えました');
+      }
     });
   }
 
